@@ -177,38 +177,66 @@ export default function HostelDetails() {
         }
 
         .hero-banner {
-          background: var(--bg-secondary);
-          border-bottom: 1px solid var(--border);
+          background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+          border-bottom: none;
           padding: 3.5rem 2.5rem;
           margin-bottom: 2.5rem;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .hero-banner::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          right: -10%;
+          width: 60%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(79, 70, 229, 0.2) 0%, transparent 70%);
+        }
+
+        .hero-banner::after {
+          content: '';
+          position: absolute;
+          bottom: -50%;
+          left: -10%;
+          width: 40%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%);
+        }
+
+        body.dark-mode .hero-banner {
+          background: linear-gradient(135deg, #000000 0%, #0a0a1a 50%, #0d1117 100%);
         }
 
         .hero-container {
           max-width: 1320px;
           margin: 0 auto;
+          position: relative;
+          z-index: 1;
         }
 
         .breadcrumb {
-          color: var(--text-secondary);
+          color: rgba(255, 255, 255, 0.7);
           margin-bottom: 1.75rem;
           font-size: 0.875rem;
           letter-spacing: -0.01em;
         }
 
         .breadcrumb a {
-          color: var(--primary);
+          color: #a5b4fc;
           text-decoration: none;
           transition: color 0.3s;
         }
 
         .breadcrumb a:hover {
-          color: var(--primary-dark);
+          color: white;
         }
 
         .hero-title {
           font-size: 3rem;
           font-weight: 700;
-          color: var(--text);
+          color: white;
           margin: 0 0 0.875rem;
           letter-spacing: -0.03em;
           line-height: 1.2;
@@ -216,7 +244,7 @@ export default function HostelDetails() {
 
         .hero-location {
           font-size: 1.1875rem;
-          color: var(--text-secondary);
+          color: rgba(255, 255, 255, 0.8);
           display: flex;
           align-items: center;
           gap: 0.5rem;
@@ -361,20 +389,21 @@ export default function HostelDetails() {
         .book-btn {
           width: 100%;
           padding: 1rem;
-          background: var(--primary);
+          background: linear-gradient(135deg, var(--primary), #06b6d4);
           color: white;
           border: none;
           border-radius: 0.875rem;
-          font-weight: 500;
+          font-weight: 600;
           font-size: 0.9375rem;
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           letter-spacing: -0.01em;
+          box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
         }
 
         .book-btn:hover {
-          background: var(--primary-dark, #4338ca);
-          transform: translateY(-1px);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4);
         }
 
         .image-gallery {
@@ -465,6 +494,33 @@ export default function HostelDetails() {
             <div className="hero-location">
               <span>📍</span>
               <span>{hostel.city}, {hostel.state}</span>
+              {hostel.gender && (
+                <span style={{ 
+                  background: 'rgba(255,255,255,0.15)', 
+                  backdropFilter: 'blur(8px)',
+                  padding: '0.25rem 0.75rem', 
+                  borderRadius: '6rem', 
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  marginLeft: '0.5rem',
+                  border: '1px solid rgba(255,255,255,0.2)'
+                }}>
+                  {hostel.gender === 'male' ? '♂ Male' : hostel.gender === 'female' ? '♀ Female' : '⚥ Co-ed'}
+                </span>
+              )}
+              {hostel.isVerified && (
+                <span style={{ 
+                  background: 'rgba(16, 185, 129, 0.25)', 
+                  padding: '0.25rem 0.75rem', 
+                  borderRadius: '6rem', 
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  color: '#6ee7b7',
+                  border: '1px solid rgba(16, 185, 129, 0.4)'
+                }}>
+                  ✓ Verified
+                </span>
+              )}
             </div>
           </div>
         </div>
