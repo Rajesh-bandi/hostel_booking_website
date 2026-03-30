@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 console.log('--- LOADING LATEST Student.js MODEL ---');
 
@@ -10,13 +11,20 @@ const StudentSchema = new mongoose.Schema({
   },
   studentId: {
     type: String,
-    required: [true, 'Student ID is required'],
     trim: true
   },
   email: {
     type: String,
+    required: [true, 'Email is required'],
+    unique: true,
     trim: true,
-    lowercase: true
+    lowercase: true,
+    match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
+  },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password must be at least 6 characters']
   },
   phone: {
     type: String,
@@ -39,43 +47,40 @@ const StudentSchema = new mongoose.Schema({
   },
   notes: String,
   photo: { type: String, default: null }, // Storing as base64 string
-  roomType: { 
-    type: String, 
-    required: true,
-    enum: ['single', 'double', 'triple', 'four'] 
+  role: {
+    type: String,
+    enum: ['student'],
+    default: 'student'
   },
-  roomNumber: { type: Number, required: true },
-  hostelName: { type: String, required: true },
-  rent: { type: Number, default: 5000 },
-  monthlyFee: {
-    type: Number,
-    default: 0
+  isEmailVerified: {
+    type: Boolean,
+    default: false
   },
-  totalPaid: {
-    type: Number,
-    default: 0
+  profileComplete: {
+    type: Boolean,
+    default: false
   },
-  paymentHistory: [{
-    amount: Number,
-    date: Date,
-    method: String,
-    reference: String,
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
   isActive: {
     type: Boolean,
     default: true
-  },
-  admin: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Admin',
-    required: true
   }
 }, {
   timestamps: true
 });
+
+// Hash password before saving
+StudentSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) {
+    return next();
+  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+// Compare password method
+StudentSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
 export default mongoose.model('Student', StudentSchema);

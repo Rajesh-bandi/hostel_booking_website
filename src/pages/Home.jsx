@@ -1,132 +1,841 @@
-import React, { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 
 export default function Home() {
+  const navigate = useNavigate();
+  const [searchLocation, setSearchLocation] = useState(null);
+  const [hostelName, setHostelName] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState('');
+
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme')
-    document.body.classList.toggle('dark-mode', savedTheme === 'dark')
+    const savedTheme = localStorage.getItem('theme');
+    document.body.classList.toggle('dark-mode', savedTheme === 'dark');
     
-    // Hero carousel
-    let currentSlide = 0
-    const slides = document.querySelectorAll('.hero-slide')
-    
-    function nextSlide() {
-      slides[currentSlide].classList.remove('active')
-      currentSlide = (currentSlide + 1) % slides.length
-      slides[currentSlide].classList.add('active')
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('userRole');
+    const name = localStorage.getItem('userName');
+    if (token && role) {
+      setIsLoggedIn(true);
+      setUserRole(role);
+      setUserName(name || (role === 'student' ? 'Student' : 'Owner'));
     }
-    
-    const interval = setInterval(nextSlide, 4000)
-    
-    return () => clearInterval(interval)
-  }, [])
+  }, []);
 
   function toggleTheme() {
-    const dark = !document.body.classList.contains('dark-mode')
-    document.body.classList.toggle('dark-mode', dark)
-    localStorage.setItem('theme', dark ? 'dark' : 'light')
+    const dark = !document.body.classList.contains('dark-mode');
+    document.body.classList.toggle('dark-mode', dark);
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
+    setIsLoggedIn(false);
+    setUserRole('');
+    setUserName('');
+  }
+
+  function handleSearch() {
+    const params = new URLSearchParams();
+    if (searchLocation?.city) {
+      params.append('city', searchLocation.city);
+    }
+    if (hostelName.trim()) {
+      params.append('name', hostelName.trim());
+    }
+
+    if (params.toString()) {
+      navigate(`/search?${params.toString()}`);
+    } else {
+      alert('Please enter a city or hostel name to search');
+    }
   }
 
   return (
     <main>
       <style>{`
-        :root { --c-primary:#0d6efd; --c-bg:#f4f4f4; --c-bg-section:#ffffff; --c-bg-dark-section:#1a1a1a; --c-bg-dark-card:#2a2a2a; --c-text-primary:#333; --c-text-secondary:#f0f0f0; --c-text-muted:#ccc; --c-border:#eee; --c-shadow:rgba(0,0,0,.1); }
-        body.dark-mode { --c-bg:#121212; --c-bg-section:#1e1e1e; --c-bg-dark-section:#1e1e1e; --c-bg-dark-card:#2c2c2c; --c-text-primary:#f0f0f0; --c-text-secondary:#f0f0f0; --c-text-muted:#888; --c-border:#333; --c-shadow:rgba(0,0,0,.3); }
-        body { background:var(--c-bg); color:var(--c-text-primary); }
-        a { text-decoration: none; }
-        a:hover { text-decoration: none; }
-        .container{width:90%;max-width:1100px;margin:0 auto}
-        .header{position:absolute;top:0;left:0;width:100%;padding:1.5rem 0;z-index:100;background:linear-gradient(to bottom, rgba(0,0,0,.5), rgba(0,0,0,0))}
-        .navbar{display:flex;justify-content:space-between;align-items:center}
-        .nav-logo{font-size:1.5rem;font-weight:bold;color:white}
-        .nav-right-cluster{display:flex;align-items:center;gap:1.5rem}
-        .nav-links{display:flex;list-style:none;gap:1.5rem}
-        .nav-links a{color:white;font-weight:500}
-        #theme-toggle{background:none;border:none;cursor:pointer;color:white;width:24px;height:24px}
-        .hero{height:90vh;min-height:600px;color:white;position:relative;overflow:hidden;display:flex;align-items:center}
-        .hero::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:2}
-        .hero-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.5s ease;z-index:1}
-        .hero-slide.active{opacity:1}
-        .slide-1{background-image:url('/images/hostel1.png')}
-        .slide-2{background-image:url('/images/hostel2.png')}
-        .slide-3{background-image:url('/images/hostel3.png')}
-        .hero-content{position:relative;z-index:3}
-        .hero h1{font-size:3.5rem;margin-bottom:1rem;color:white}
-        .hero p{font-size:1.2rem;max-width:500px;margin-bottom:2rem;color:white}
-        .hero-btn{background:var(--c-primary);color:white;padding:.8rem 1.5rem;font-weight:bold;border:2px solid var(--c-primary);border-radius:5px}
-        .about-section{padding:4rem 0;background:var(--c-bg-section)}
-        .about-content{display:flex;gap:2rem;align-items:center}
-        .about-image img{border-radius:8px;box-shadow:0 4px 15px var(--c-shadow)}
-        .room-options{padding:4rem 0;background:var(--c-bg-dark-section)}
-        .room-options-title{color:var(--c-text-secondary);text-align:center;font-size:2.5rem;margin-bottom:3rem}
-        .room-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem;text-align:center}
-        .room-card{background:var(--c-bg-dark-card);padding:2rem;border-radius:8px}
-        .footer{background:var(--c-bg-dark-section);color:var(--c-text-muted);padding-top:4rem}
-        .footer-bottom{text-align:center;padding:1.5rem 0;border-top:1px solid var(--c-border)}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+          --primary: #4f46e5;
+          --primary-dark: #4338ca;
+          --primary-light: #6366f1;
+          --accent: #06b6d4;
+          --accent-warm: #f59e0b;
+          --bg: #ffffff;
+          --bg-secondary: #fafafa;
+          --bg-tertiary: #f5f5f5;
+          --text: #0a0a0a;
+          --text-secondary: #525252;
+          --text-tertiary: #737373;
+          --border: #e5e5e5;
+          --border-light: #f5f5f5;
+          --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+          --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+          --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+          --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        }
+
+        body.dark-mode {
+          --bg: #0a0a0a;
+          --bg-secondary: #171717;
+          --bg-tertiary: #262626;
+          --text: #fafafa;
+          --text-secondary: #a3a3a3;
+          --text-tertiary: #737373;
+          --border: #262626;
+          --border-light: #171717;
+          --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+          --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+          --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+          --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif;
+          background: var(--bg);
+          color: var(--text);
+          line-height: 1.5;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Header */
+        .header {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 1000;
+          background: rgba(255, 255, 255, 0.75);
+          backdrop-filter: blur(20px) saturate(180%);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.dark-mode .header {
+          background: rgba(10, 10, 10, 0.75);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-container {
+          max-width: 1320px;
+          margin: 0 auto;
+          padding: 1.25rem 2.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .logo {
+          font-size: 1.375rem;
+          font-weight: 700;
+          letter-spacing: -0.025em;
+          background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          display: flex;
+          align-items: center;
+          gap: 0.625rem;
+          transition: transform 0.3s;
+        }
+
+        .logo:hover {
+          transform: translateY(-1px);
+        }
+
+        .nav-links {
+          display: flex;
+          gap: 2.5rem;
+          align-items: center;
+          list-style: none;
+        }
+
+        .nav-links a {
+          color: var(--text-secondary);
+          text-decoration: none;
+          font-weight: 500;
+          font-size: 0.9375rem;
+          letter-spacing: -0.01em;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+        }
+
+        .nav-links a::after {
+          content: '';
+          position: absolute;
+          bottom: -0.375rem;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, var(--primary), var(--accent));
+          transform: scaleX(0);
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-links a:hover {
+          color: var(--text);
+        }
+
+        .nav-links a:hover::after {
+          transform: scaleX(1);
+        }
+
+        .nav-actions {
+          display: flex;
+          gap: 0.875rem;
+          align-items: center;
+        }
+
+        .btn-outline {
+          padding: 0.625rem 1.5rem;
+          border: 1.5px solid var(--border);
+          color: var(--text);
+          border-radius: 0.625rem;
+          font-weight: 500;
+          font-size: 0.9375rem;
+          text-decoration: none;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          letter-spacing: -0.01em;
+        }
+
+        .btn-outline:hover {
+          background: var(--bg-secondary);
+          border-color: var(--primary);
+          color: var(--primary);
+          transform: translateY(-1px);
+          box-shadow: var(--shadow);
+        }
+
+        .btn-primary {
+          padding: 0.625rem 1.5rem;
+          background: linear-gradient(135deg, var(--primary), var(--accent));
+          color: white;
+          border: none;
+          border-radius: 0.625rem;
+          font-weight: 500;
+          font-size: 0.9375rem;
+          text-decoration: none;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          letter-spacing: -0.01em;
+          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+        }
+
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+        }
+
+        .theme-btn {
+          background: var(--bg-secondary);
+          border: 1.5px solid var(--border);
+          border-radius: 0.625rem;
+          padding: 0.5rem;
+          cursor: pointer;
+          font-size: 1.125rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          width: 2.5rem;
+          height: 2.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .theme-btn:hover {
+          transform: translateY(-1px) scale(1.05);
+          border-color: var(--primary);
+          box-shadow: var(--shadow);
+        }
+
+        /* Hero */
+        .hero {
+          margin-top: 5rem;
+          padding: 9rem 2.5rem 8rem;
+          background: linear-gradient(180deg, var(--bg) 0%, var(--bg-secondary) 100%);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .hero::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -10%;
+          width: 60%;
+          height: 150%;
+          background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, transparent 70%);
+          animation: float 20s ease-in-out infinite;
+        }
+
+        .hero::after {
+          content: '';
+          position: absolute;
+          bottom: -50%;
+          right: -10%;
+          width: 60%;
+          height: 150%;
+          background: radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, transparent 70%);
+          animation: float 25s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(50px, 50px); }
+        }
+
+        .hero-content {
+          max-width: 980px;
+          margin: 0 auto;
+          text-align: center;
+          position: relative;
+          z-index: 1;
+        }
+
+        .hero-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.625rem;
+          background: var(--bg);
+          border: 1.5px solid var(--border);
+          padding: 0.5rem 1rem;
+          border-radius: 6.25rem;
+          color: var(--text-secondary);
+          font-size: 0.875rem;
+          font-weight: 500;
+          margin-bottom: 2.5rem;
+          letter-spacing: -0.01em;
+          box-shadow: var(--shadow);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hero-badge:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-lg);
+        }
+
+        .hero-title {
+          font-size: 4.5rem;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0 0 1.5rem;
+          line-height: 1.1;
+          letter-spacing: -0.03em;
+        }
+
+        .hero-subtitle {
+          font-size: 1.375rem;
+          color: var(--text-secondary);
+          margin: 0 0 3.5rem;
+          font-weight: 400;
+          letter-spacing: -0.01em;
+          line-height: 1.5;
+        }
+
+        /* Search Box */
+        .search-card {
+          background: var(--bg);
+          border: 1.5px solid var(--border);
+          border-radius: 1.25rem;
+          padding: 1.75rem;
+          box-shadow: var(--shadow-xl);
+          max-width: 980px;
+          margin: 0 auto;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-card:hover {
+          box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.2);
+        }
+
+        body.dark-mode .search-card {
+          background: var(--bg-secondary);
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        .search-grid {
+          display: grid;
+          grid-template-columns: 1.2fr 1fr auto;
+          gap: 0.875rem;
+        }
+
+        .search-input {
+          padding: 1rem 1.375rem;
+          border: 1.5px solid var(--border);
+          border-radius: 0.875rem;
+          font-size: 0.9375rem;
+          background: var(--bg-secondary);
+          color: var(--text);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          letter-spacing: -0.01em;
+        }
+
+        .search-input:focus {
+          outline: none;
+          border-color: var(--primary);
+          background: var(--bg);
+          box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+        }
+
+        .search-btn {
+          padding: 1rem 2.25rem;
+          background: linear-gradient(135deg, var(--primary), var(--accent));
+          color: white;
+          border: none;
+          border-radius: 0.875rem;
+          font-weight: 500;
+          font-size: 0.9375rem;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          white-space: nowrap;
+          letter-spacing: -0.01em;
+          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+        }
+
+        .search-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+        }
+
+        .search-btn:active {
+          transform: translateY(0);
+        }
+
+        /* Features */
+        .features {
+          padding: 7rem 2.5rem;
+          background: var(--bg);
+        }
+
+        .container {
+          max-width: 1320px;
+          margin: 0 auto;
+        }
+
+        .section-header {
+          text-align: center;
+          margin-bottom: 5rem;
+        }
+
+        .section-tag {
+          display: inline-block;
+          padding: 0.5rem 1.125rem;
+          background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(6, 182, 212, 0.08));
+          color: var(--primary);
+          border-radius: 6.25rem;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          margin-bottom: 1.25rem;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          border: 1.5px solid rgba(79, 70, 229, 0.15);
+        }
+
+        .section-title {
+          font-size: 2.75rem;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0 0 1rem;
+          letter-spacing: -0.03em;
+          line-height: 1.2;
+        }
+
+        .section-subtitle {
+          font-size: 1.25rem;
+          color: var(--text-secondary);
+          letter-spacing: -0.01em;
+          line-height: 1.5;
+        }
+
+        .features-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2rem;
+        }
+
+        .feature-card {
+          background: var(--bg-secondary);
+          padding: 2.5rem;
+          border-radius: 1.25rem;
+          border: 1.5px solid var(--border);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .feature-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, rgba(79, 70, 229, 0.03), rgba(6, 182, 212, 0.03));
+          opacity: 0;
+          transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .feature-card:hover {
+          transform: translateY(-8px);
+          box-shadow: var(--shadow-lg);
+          border-color: rgba(79, 70, 229, 0.2);
+        }
+
+        .feature-card:hover::before {
+          opacity: 1;
+        }
+
+        .feature-icon {
+          width: 3.5rem;
+          height: 3.5rem;
+          background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(6, 182, 212, 0.1));
+          border-radius: 0.875rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.75rem;
+          margin-bottom: 1.5rem;
+          border: 1.5px solid rgba(79, 70, 229, 0.15);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          z-index: 1;
+        }
+
+        .feature-card:hover .feature-icon {
+          transform: scale(1.1) rotate(5deg);
+        }
+
+        .feature-title {
+          font-size: 1.375rem;
+          font-weight: 600;
+          color: var(--text);
+          margin: 0 0 0.875rem;
+          letter-spacing: -0.02em;
+          position: relative;
+          z-index: 1;
+        }
+
+        .feature-desc {
+          color: var(--text-secondary);
+          line-height: 1.7;
+          font-size: 0.9375rem;
+          letter-spacing: -0.01em;
+          position: relative;
+          z-index: 1;
+        }
+
+        /* CTA */
+        .cta {
+          padding: 7rem 2.5rem;
+          background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .cta::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -20%;
+          width: 80%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+          animation: float 25s ease-in-out infinite;
+        }
+
+        .cta::after {
+          content: '';
+          position: absolute;
+          bottom: -50%;
+          right: -20%;
+          width: 80%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+          animation: float 30s ease-in-out infinite reverse;
+        }
+
+        .cta-content {
+          max-width: 850px;
+          margin: 0 auto;
+          text-align: center;
+          position: relative;
+          z-index: 1;
+        }
+
+        .cta-title {
+          font-size: 3rem;
+          font-weight: 700;
+          color: white;
+          margin: 0 0 1.25rem;
+          letter-spacing: -0.03em;
+          line-height: 1.2;
+        }
+
+        .cta-subtitle {
+          font-size: 1.25rem;
+          color: rgba(255, 255, 255, 0.9);
+          margin: 0 0 2.75rem;
+          letter-spacing:-0.01em;
+          line-height: 1.5;
+        }
+
+        .cta-btn {
+          padding: 1.125rem 2.75rem;
+          background: white;
+          color: var(--primary);
+          border: none;
+          border-radius: 0.875rem;
+          font-weight: 600;
+          font-size: 1.0625rem;
+          cursor: pointer;
+          text-decoration: none;
+          display: inline-block;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          letter-spacing: -0.01em;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .cta-btn:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Footer */
+        .footer {
+          background: var(--bg-secondary);
+          padding: 3.5rem 2.5rem;
+          border-top: 1.5px solid var(--border);
+        }
+
+        .footer-content {
+          max-width: 1320px;
+          margin: 0 auto;
+          text-align: center;
+        }
+
+        .footer-logo {
+          font-size: 1.375rem;
+          font-weight: 700;
+          background: linear-gradient(135deg, var(--primary), var(--accent));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin-bottom: 1rem;
+          letter-spacing: -0.025em;
+        }
+
+        .footer-text {
+          color: var(--text-secondary);
+          margin: 0.625rem 0;
+          font-size: 0.9375rem;
+          letter-spacing: -0.01em;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .nav-links { display: none; }
+          .nav-container { padding: 1rem 1.5rem; }
+          .hero { padding: 7rem 1.5rem 5rem; margin-top: 4rem; }
+          .hero-title { font-size: 2.75rem; }
+          .hero-subtitle { font-size: 1.125rem; }
+          .search-grid { grid-template-columns: 1fr; }
+          .search-card { padding: 1.5rem; }
+          .features { padding: 5rem 1.5rem; }
+          .features-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+          .section-title { font-size: 2.25rem; }
+          .section-subtitle { font-size: 1.125rem; }
+          .cta { padding: 5rem 1.5rem; }
+          .cta-title { font-size: 2.25rem; }
+          .cta-subtitle { font-size: 1.125rem; }
+          .footer { padding: 2.5rem 1.5rem; }
+        }
+
+        @media (max-width: 480px) {
+          .hero-title { font-size: 2.25rem; }
+          .section-title { font-size: 1.875rem; }
+          .cta-title { font-size: 1.875rem; }
+        }
       `}</style>
 
       <header className="header">
-        <nav className="navbar container">
-          <Link to="/" className="nav-logo">Rajesh Hostel</Link>
-          <div className="nav-right-cluster">
+        <div className="nav-container">
+          <Link to="/" className="logo">
+            <span>🏠</span>
+            HostelHub
+          </Link>
+
+          <nav>
             <ul className="nav-links">
               <li><Link to="/">Home</Link></li>
-              <li><a href="#about">About</a></li>
-              <li><a href="#rooms">Rooms</a></li>
-              <li><Link to="/hostel-info">Hostel Info</Link></li>
+              <li><Link to="/search">Browse</Link></li>
+              <li><Link to="/hostel-info">How It Works</Link></li>
             </ul>
-            <Link to="/login" className="admin-login" style={{color:'#fff',border:'1px solid #fff',padding:'.5rem 1rem',borderRadius:5}}>Admin Login</Link>
-            <button id="theme-toggle" onClick={toggleTheme} title="Toggle dark mode">🌓</button>
+          </nav>
+
+          <div className="nav-actions">
+            {isLoggedIn ? (
+              <>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                  Welcome, <strong style={{ color: 'var(--text)' }}>{userName}</strong>
+                </span>
+                <Link 
+                  to={userRole === 'student' ? '/student/dashboard' : '/owner/dashboard'} 
+                  className="btn-outline"
+                >
+                  Dashboard
+                </Link>
+                <button onClick={handleLogout} className="btn-primary" style={{ background: '#dc2626' }}>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="btn-outline">Login</Link>
+                <Link to="/login" className="btn-primary">Sign Up</Link>
+              </>
+            )}
+            <button className="theme-btn" onClick={toggleTheme}>
+              {document.body.classList.contains('dark-mode') ? '☀️' : '🌙'}
+            </button>
           </div>
-        </nav>
+        </div>
       </header>
 
       <section className="hero">
-        <div className="hero-slide slide-1 active"></div>
-        <div className="hero-slide slide-2"></div>
-        <div className="hero-slide slide-3"></div>
-        <div className="hero-content container">
-          <h1>Premium Student <br/> Accommodation</h1>
-          <p>Safe, comfortable and convenient living spaces for SRKR Engineering College students.</p>
-          <Link to="/hostel-info" className="hero-btn">Explore Rooms</Link>
-        </div>
-      </section>
+        <div className="hero-content">
+          <div className="hero-badge">
+            <span>✨</span>
+            <span>Trusted by 10,000+ Students</span>
+          </div>
 
-      <section id="about" className="about-section">
-        <div className="container">
-          <h2 className="about-title" style={{textAlign:'center',fontSize:'2.5rem',marginBottom:'3rem'}}>About Our Hostel</h2>
-          <div className="about-content">
-            <div className="about-image" style={{flex:1}}>
-              <img src="/images/hostel4.png" alt="Rajesh Hostel Building" style={{width:'100%',height:'auto',maxWidth:'500px'}} />
-            </div>
-            <div className="about-text" style={{flex:1}}>
-              <h3>Welcome to Rajesh Hostel</h3>
-              <p>Our private hostel is strategically located near SRKR Engineering College, Bhimavaram, providing convenient and comfortable accommodation for students studying in nearby institutions.</p>
-              <p>We offer a peaceful and safe environment designed to help students focus on their academics while enjoying a home-like atmosphere. Our facilities are modern, clean, and maintained to the highest standards.</p>
-              <p>With 24/7 security, high-speed WiFi, laundry services, and nutritious meals, we provide everything students need for a productive academic life.</p>
-              <Link to="/hostel-info" className="about-details-link" style={{display:'inline-block',marginTop:'1rem',color:'var(--c-primary)',fontWeight:'bold'}}>More Details →</Link>
+          <h1 className="hero-title">
+            Find Your Perfect<br />Student Hostel
+          </h1>
+
+          <p className="hero-subtitle">
+            Discover verified hostels across India with the best amenities and prices
+          </p>
+
+          <div className="search-card">
+            <div className="search-grid">
+              <LocationAutocomplete
+                onSelect={setSearchLocation}
+                placeholder="📍 City or Location"
+              />
+              <input
+                type="text"
+                className="search-input"
+                placeholder="🏨 Hostel Name (Optional)"
+                value={hostelName}
+                onChange={e => setHostelName(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && handleSearch()}
+              />
+              <button className="search-btn" onClick={handleSearch}>
+                Search
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="rooms" className="room-options">
+      <section className="features">
         <div className="container">
-          <h2 className="room-options-title">Our Room Options</h2>
-          <div className="room-grid">
-            <div className="room-card"><h4 style={{color:'#fff'}}>Total Rooms</h4><p style={{color:'#fff',fontSize:'2.5rem',margin:0}}>100</p></div>
-            <div className="room-card"><h4 style={{color:'#fff'}}>2-Person Sharing</h4><p style={{color:'#fff',fontSize:'2.5rem',margin:0}}>30</p></div>
-            <div className="room-card"><h4 style={{color:'#fff'}}>3-Person Sharing</h4><p style={{color:'#fff',fontSize:'2.5rem',margin:0}}>30</p></div>
-            <div className="room-card"><h4 style={{color:'#fff'}}>4-Person Sharing</h4><p style={{color:'#fff',fontSize:'2.5rem',margin:0}}>40</p></div>
+          <div className="section-header">
+            <span className="section-tag">HOW IT WORKS</span>
+            <h2 className="section-title">Simple Steps to Your New Home</h2>
+            <p className="section-subtitle">Find and book your perfect hostel in minutes</p>
           </div>
+
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon">🔍</div>
+              <h3 className="feature-title">Search & Compare</h3>
+              <p className="feature-desc">
+                Browse hundreds of verified hostels. Filter by location, price, and amenities to find your perfect match.
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">✅</div>
+              <h3 className="feature-title">Book Instantly</h3>
+              <p className="feature-desc">
+                Create your profile, submit booking requests, and connect directly with hostel owners instantly.
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">🏠</div>
+              <h3 className="feature-title">Move In</h3>
+              <p className="feature-desc">
+                Once approved, complete the payment and move into your comfortable new home away from home.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="features" style={{ background: 'var(--bg)' }}>
+        <div className="container">
+          <div className="section-header">
+            <span className="section-tag">FOR OWNERS</span>
+            <h2 className="section-title">List Your Hostel</h2>
+            <p className="section-subtitle">Reach thousands of students looking for accommodation</p>
+          </div>
+
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon">📝</div>
+              <h3 className="feature-title">Easy Setup</h3>
+              <p className="feature-desc">
+                Create your hostel profile in minutes with our intuitive registration process.
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">👥</div>
+              <h3 className="feature-title">Manage Bookings</h3>
+              <p className="feature-desc">
+                Review requests, approve bookings, and manage everything from one dashboard.
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">💰</div>
+              <h3 className="feature-title">Track Payments</h3>
+              <p className="feature-desc">
+                Monitor rent payments, generate receipts, and manage finances effortlessly.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="cta">
+        <div className="cta-content">
+          <h2 className="cta-title">Ready to Find Your Hostel?</h2>
+          <p className="cta-subtitle">
+            Join thousands of students who found their perfect accommodation
+          </p>
+          <Link to="/login" className="cta-btn">
+            Get Started Free
+          </Link>
         </div>
       </section>
 
       <footer className="footer">
-        <div className="footer-bottom">
-          <p>© 2025 SRKR Hostel Management. All rights reserved.</p>
+        <div className="footer-content">
+          <div className="footer-logo">HostelHub</div>
+          <p className="footer-text">Your Trusted Student Accommodation Platform</p>
+          <p className="footer-text" style={{ fontSize: '0.875rem', marginTop: '1rem' }}>
+            © 2026 HostelHub. All rights reserved.
+          </p>
         </div>
       </footer>
     </main>
-  )
+  );
 }

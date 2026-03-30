@@ -11,12 +11,15 @@
     "start:all": "concurrently \"npm run dev\" \"npm run server\""
   },
   "dependencies": {
+    "axios": "^1.13.6",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.3.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
+    "nodemailer": "^8.0.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.26.1"

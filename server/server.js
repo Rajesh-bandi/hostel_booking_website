@@ -6,6 +6,10 @@ import authRoutes from './routes/auth.js';
 import roomRoutes from './routes/rooms.js';
 import studentRoutes from './routes/students.js';
 import feeRoutes from './routes/fees.js';
+import hostelRoutes from './routes/hostels.js';
+import locationRoutes from './routes/location.js';
+import bookingRoutes from './routes/bookings.js';
+import reviewRoutes from './routes/reviews.js';
 
 dotenv.config();
 
@@ -28,6 +32,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/fees', feeRoutes);
+app.use('/api/hostels', hostelRoutes);
+app.use('/api/location', locationRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Health check
 app.get('/', (req, res) => {

@@ -1,125 +1,153 @@
 import express from 'express';
 import Student from '../models/Student.js';
 import Room from '../models/Room.js';
-import Admin from '../models/Admin.js';
-import { authenticate } from '../middleware/auth.js';
+import Booking from '../models/Booking.js';
+import Hostel from '../models/Hostel.js';
+import { authenticateOwner, authenticateStudent } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// @route   GET /api/students
-// @desc    Get all students for logged in admin
-// @access  Private
-router.get('/', authenticate, async (req, res) => {
+// ==========================================================================
+// IMPORTANT: Specific routes must come BEFORE generic /:id route!
+// ==========================================================================
+
+// @route   PUT /api/students/profile
+// @desc    Update student's own profile
+// @access  Private (Student)
+router.put('/profile', authenticateStudent, async (req, res) => {
   try {
-    const students = await Student.find({ admin: req.admin.id }).sort({ createdAt: -1 });
-    res.json({ success: true, students });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
+    const allowedFields = [
+      'name', 'phone', 'address', 'course', 'year', 
+      'gender', 'dob', 'emergencyContact', 'notes', 'photo'
+    ];
 
-// @route   POST /api/students
-// @desc    Add a new student
-// @access  Private
-router.post('/', authenticate, async (req, res) => {
-  try {
-    console.log('📝 Received student data:', JSON.stringify(req.body, null, 2));
-    
-    // Fetch admin details to get hostelName
-    const admin = await Admin.findById(req.admin.id);
-    if (!admin) {
-      return res.status(404).json({ success: false, message: 'Admin not found' });
-    }
-
-    // Set rent based on room type
-    let rent = 5000; // default for 4-sharing
-    if (req.body.roomType === 'double') {
-      rent = 8000;
-    } else if (req.body.roomType === 'triple') {
-      rent = 6500;
-    } else if (req.body.roomType === 'four') {
-      rent = 5000;
-    }
-
-    // Correctly map admin and add server-side fields
-    const studentData = { 
-      ...req.body, 
-      admin: req.admin.id,
-      hostelName: admin.hostelName,
-      rent: rent
-    };
-    
-    // Check if student ID already exists
-    const existing = await Student.findOne({ studentId: studentData.studentId, admin: req.admin.id });
-    if (existing) {
-      console.log('❌ Student ID already exists:', studentData.studentId);
-      return res.status(400).json({ success: false, message: 'Student ID already exists' });
-    }
-
-    // Create student
-    console.log('Attempting to create student with data:', JSON.stringify(studentData, null, 2));
-    
-    const student = await Student.create(studentData);
-    console.log('✅ Student created successfully:', student._id);
-
-    // Update room occupants
-    console.log(`Updating room number: ${student.roomNumber}`);
-    const roomUpdate = await Room.findOneAndUpdate(
-      { number: student.roomNumber, adminId: req.admin.id },
-      { $push: { occupants: student._id }, status: 'occupied' },
-      { new: true }
-    );
-    
-    if (!roomUpdate) {
-      console.log(`⚠️ Room not found for number: ${student.roomNumber} and adminId: ${req.admin.id}`);
-    } else {
-      console.log(`✅ Room ${roomUpdate.number} updated. Occupants: ${roomUpdate.occupants.length}`);
-    }
-
-    res.status(201).json({ success: true, student });
-  } catch (error) {
-    console.error('❌ Error adding student:');
-    console.error('Error Name:', error.name);
-    console.error('Error Message:', error.message);
-    
-    // Log validation errors specifically
-    if (error.name === 'ValidationError') {
-      console.error('Validation Errors:', error.errors);
-      const messages = Object.values(error.errors).map(e => e.message);
-      return res.status(400).json({ success: false, message: `Validation Error: ${messages.join(', ')}` });
-    }
-    
-    // Log the full error for debugging
-    console.error('Full Error Object:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
-
-// @route   DELETE /api/students/:id
-// @desc    Remove a student
-// @access  Private
-router.delete('/:id', authenticate, async (req, res) => {
-  try {
-    const student = await Student.findOneAndDelete({ 
-      _id: req.params.id, 
-      admin: req.admin.id 
+    const updates = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
     });
 
+    // Check if profile is complete
+    const student = await Student.findById(req.user.id);
+    if (updates.name && updates.phone && updates.address) {
+      updates.profileComplete = true;
+    }
+
+    const updatedStudent = await Student.findByIdAndUpdate(
+      req.user.id,
+      { $set: updates },
+      { new: true }
+    ).select('-password');
+
+    res.json({ success: true, student: updatedStudent });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// @route   GET /api/students/booking/current
+// @desc    Get student's current booking details
+// @access  Private (Student)
+router.get('/booking/current', authenticateStudent, async (req, res) => {
+  try {
+    const booking = await Booking.findOne({
+      student: req.user.id,
+      status: { $in: ['active', 'approved'] }
+    })
+    .populate('hostel', 'name city address contactPhone contactEmail amenities')
+    .populate('room', 'number type rent');
+
+    if (!booking) {
+      return res.json({ success: true, booking: null, message: 'No active booking found' });
+    }
+
+    res.json({ success: true, booking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// @route   GET /api/students/hostel/:hostelId
+// @desc    Get all students with active bookings in a hostel (owner only)
+// @access  Private (Owner)
+router.get('/hostel/:hostelId', authenticateOwner, async (req, res) => {
+  try {
+    // Verify owner owns this hostel
+    const hostel = await Hostel.findOne({ 
+      _id: req.params.hostelId, 
+      owner: req.user.id 
+    });
+    
+    if (!hostel) {
+      return res.status(404).json({ success: false, message: 'Hostel not found or access denied' });
+    }
+
+    // Find all active/approved bookings for this hostel
+    const bookings = await Booking.find({ 
+      hostel: req.params.hostelId,
+      status: { $in: ['active', 'approved'] }
+    })
+    .populate('student', 'name email phone studentId course year gender photo address emergencyContact')
+    .populate('room', 'number type rent')
+    .sort({ checkInDate: -1 });
+
+    // Extract student data with booking info
+    const students = bookings.map(booking => ({
+      _id: booking.student._id,
+      name: booking.student.name,
+      email: booking.student.email,
+      phone: booking.student.phone,
+      studentId: booking.student.studentId,
+      course: booking.student.course,
+      year: booking.student.year,
+      gender: booking.student.gender,
+      photo: booking.student.photo,
+      address: booking.student.address,
+      emergencyContact: booking.student.emergencyContact,
+      booking: {
+        _id: booking._id,
+        roomNumber: booking.roomNumber,
+        roomType: booking.roomType,
+        rent: booking.rent,
+        status: booking.status,
+        checkInDate: booking.checkInDate,
+        totalPaid: booking.totalPaid
+      }
+    }));
+
+    res.json({ success: true, students, hostel: { name: hostel.name, _id: hostel._id } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// @route   GET /api/students/:id
+// @desc    Get single student details (owner of their hostel or the student themselves)
+// @access  Private
+// NOTE: This generic route must come AFTER all specific routes!
+router.get('/:id', async (req, res) => {
+  try {
+    const student = await Student.findById(req.params.id)
+      .select('-password');
+      
     if (!student) {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
 
-    // Update room
-    const room = await Room.findOne({ number: student.roomNumber, admin: req.admin.id });
-    if (room) {
-      room.occupants = room.occupants.filter(id => id.toString() !== student._id.toString());
-      if (room.occupants.length === 0) {
-        room.status = 'available';
-      }
-      await room.save();
-    }
+    // Get active booking for this student
+    const activeBooking = await Booking.findOne({
+      student: req.params.id,
+      status: { $in: ['active', 'approved', 'pending'] }
+    })
+    .populate('hostel', 'name city')
+    .populate('room', 'number type');
 
-    res.json({ success: true, message: 'Student removed successfully' });
+    res.json({ 
+      success: true, 
+      student,
+      activeBooking
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }

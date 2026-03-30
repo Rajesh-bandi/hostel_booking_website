@@ -1,49 +1,132 @@
 import express from 'express';
 import Room from '../models/Room.js';
-import { authenticate } from '../middleware/auth.js';
+import Hostel from '../models/Hostel.js';
+import { authenticate, authenticateOwner } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// @route   GET /api/rooms
-// @desc    Get all rooms for logged in admin
-// @access  Private
-router.get('/', authenticate, async (req, res) => {
+// @route   GET /api/rooms/hostel/:hostelId
+// @desc    Get all rooms for a specific hostel (owner only)
+// @access  Private (Owner)
+router.get('/hostel/:hostelId', authenticateOwner, async (req, res) => {
   try {
-    const rooms = await Room.find({ adminId: req.admin.id })
-      .populate('occupants')
+    // Verify owner owns this hostel
+    const hostel = await Hostel.findOne({ 
+      _id: req.params.hostelId, 
+      owner: req.user.id 
+    });
+    
+    if (!hostel) {
+      return res.status(404).json({ success: false, message: 'Hostel not found or access denied' });
+    }
+
+    const rooms = await Room.find({ hostelId: req.params.hostelId })
+      .populate('occupants', 'name email phone')
+      .populate({
+        path: 'currentBookings',
+        populate: { path: 'student', select: 'name email phone' }
+      })
+      .sort({ type: 1, number: 1 });
+      
+    res.json({ success: true, rooms, hostel });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// @route   GET /api/rooms/hostel/:hostelId/:type
+// @desc    Get rooms by type for a specific hostel
+// @access  Private (Owner)
+router.get('/hostel/:hostelId/:type', authenticateOwner, async (req, res) => {
+  try {
+    const hostel = await Hostel.findOne({ 
+      _id: req.params.hostelId, 
+      owner: req.user.id 
+    });
+    
+    if (!hostel) {
+      return res.status(404).json({ success: false, message: 'Hostel not found or access denied' });
+    }
+
+    const rooms = await Room.find({ 
+      hostelId: req.params.hostelId, 
+      type: req.params.type 
+    })
+      .populate('occupants', 'name email phone')
       .sort({ number: 1 });
+      
     res.json({ success: true, rooms });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
-// @route   GET /api/rooms/:type
-// @desc    Get rooms by type
-// @access  Private
-router.get('/:type', authenticate, async (req, res) => {
+// @route   PUT /api/rooms/:id/status
+// @desc    Update room status (owner only)
+// @access  Private (Owner)
+router.put('/:id/status', authenticateOwner, async (req, res) => {
   try {
-    const type = req.params.type;
-    const rooms = await Room.find({ adminId: req.admin.id, type })
-      .populate('occupants')
-      .sort({ number: 1 });
-    res.json({ success: true, rooms });
+    const room = await Room.findById(req.params.id).populate('hostelId');
+    
+    if (!room) {
+      return res.status(404).json({ success: false, message: 'Room not found' });
+    }
+
+    // Verify owner owns the hostel this room belongs to
+    if (room.hostelId.owner.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    room.status = req.body.status;
+    await room.save();
+
+    res.json({ success: true, room });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
-// @route   PUT /api/rooms/:id
-// @desc    Update room status
-// @access  Private
-router.put('/:id', authenticate, async (req, res) => {
+// @route   PUT /api/rooms/:id/checkout
+// @desc    Check out occupant from room (owner only)
+// @access  Private (Owner)
+router.put('/:id/checkout', authenticateOwner, async (req, res) => {
   try {
-    const room = await Room.findOneAndUpdate(
-      { _id: req.params.id, adminId: req.admin.id },
-      { status: req.body.status },
-      { new: true }
-    );
+    const room = await Room.findById(req.params.id).populate('hostelId');
+    
+    if (!room) {
+      return res.status(404).json({ success: false, message: 'Room not found' });
+    }
 
+    // Verify owner owns the hostel
+    if (room.hostelId.owner.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // Clear occupants and set to available
+    room.occupants = [];
+    room.currentBookings = [];
+    room.status = 'available';
+    await room.save();
+
+    res.json({ success: true, room, message: 'Room checked out successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// @route   GET /api/rooms/:id
+// @desc    Get single room details
+// @access  Public (for viewing) / Private (for management)
+router.get('/:id', async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.id)
+      .populate('hostelId', 'name city owner')
+      .populate('occupants', 'name email phone')
+      .populate({
+        path: 'currentBookings',
+        populate: { path: 'student', select: 'name email phone' }
+      });
+      
     if (!room) {
       return res.status(404).json({ success: false, message: 'Room not found' });
     }

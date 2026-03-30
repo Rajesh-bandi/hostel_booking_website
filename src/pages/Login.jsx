@@ -1,359 +1,475 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { authAPI } from '../services/api'
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { authAPI } from '../services/api';
 
 export default function Login() {
-  const [mode, setMode] = useState('login') // 'login' or 'register'
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [hostelName, setHostelName] = useState('')
-  const [hostelLogo, setHostelLogo] = useState('')
-  const [doubleRooms, setDoubleRooms] = useState(30)
-  const [tripleRooms, setTripleRooms] = useState(30)
-  const [fourRooms, setFourRooms] = useState(40)
-  const [doubleStartRoom, setDoubleStartRoom] = useState(201)
-  const [tripleStartRoom, setTripleStartRoom] = useState(301)
-  const [fourStartRoom, setFourStartRoom] = useState(401)
-  const [otp, setOtp] = useState('')
-  const [generatedOtp, setGeneratedOtp] = useState('')
-  const [otpSent, setOtpSent] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const [role, setRole] = useState('');
+  const [formData, setFormData] = useState({
+    // Student fields
+    email: '',
+    // Owner fields
+    username: '',
+    // Common
+    password: '',
+  });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme')
-    document.body.classList.toggle('dark-mode', savedTheme === 'dark')
-  }, [])
-  
-  // Clear form when switching modes
-  useEffect(() => {
-    setUsername('')
-    setEmail('')
-    setPassword('')
-    setConfirmPassword('')
-    setOtpSent(false)
-    setOtp('')
-    setErrorMessage('')
-  }, [mode])
+    const savedTheme = localStorage.getItem('theme');
+    document.body.classList.toggle('dark-mode', savedTheme === 'dark');
+  }, []);
 
-  async function handleLogin(e) {
-    e.preventDefault()
-    setErrorMessage('')
-    
-    if (!username || !password) {
-      setErrorMessage('Enter username and password')
-      return
-    }
-    
-    setIsLoading(true)
-    const result = await authAPI.login(username, password)
-    setIsLoading(false)
-    
-    if (result.success) {
-      alert('Login successful!')
-      navigate('/admin')
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    setIsLoading(true);
+
+    let result;
+    if (role === 'student') {
+      result = await authAPI.studentLogin(formData.email, formData.password);
     } else {
-      setErrorMessage(result.message || 'Invalid credentials')
-    }
-  }
-
-  async function handleRegister(e) {
-    e.preventDefault()
-    setErrorMessage('')
-    
-    if (!username || !email || !password || !confirmPassword || !hostelName) {
-      setErrorMessage('Please fill all required fields')
-      return
-    }
-    
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      setErrorMessage('Please enter a valid email address')
-      return
-    }
-    
-    if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match')
-      return
-    }
-    
-    if (doubleRooms < 0 || tripleRooms < 0 || fourRooms < 0) {
-      setErrorMessage('Room counts cannot be negative')
-      return
+      result = await authAPI.ownerLogin(formData.username, formData.password);
     }
 
-    const adminData = {
-      username,
-      email,
-      password,
-      hostelName,
-      hostelLogo,
-      roomConfig: {
-        double: { count: doubleRooms, startRoom: doubleStartRoom },
-        triple: { count: tripleRooms, startRoom: tripleStartRoom },
-        four: { count: fourRooms, startRoom: fourStartRoom }
+    setIsLoading(false);
+
+    if (result.success) {
+      if (role === 'student') {
+        navigate('/student/dashboard');
+      } else {
+        navigate('/owner/dashboard');
       }
-    }
-    
-    setIsLoading(true)
-    const result = await authAPI.register(adminData)
-    setIsLoading(false)
-    
-    if (result.success) {
-      alert('Registration successful! Welcome to your hostel management system.')
-      navigate('/admin')
     } else {
-      setErrorMessage(result.message || 'Registration failed')
+      setError(result.message || 'Invalid credentials');
     }
-  }
+  };
 
-  function handleLogoUpload(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Image size should be less than 2MB')
-      return
-    }
-    
-    const reader = new FileReader()
-    reader.onload = () => {
-      setHostelLogo(reader.result)
-    }
-    reader.readAsDataURL(file)
+  if (!role) {
+    return (
+      <>
+        <style>{`
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+
+          :root {
+            --primary: #4f46e5;
+            --accent: #06b6d4;
+            --bg: #ffffff;
+            --bg-secondary: #fafafa;
+            --text: #0a0a0a;
+            --text-secondary: #525252;
+            --border: #e5e5e5;
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08);
+          }
+
+          body.dark-mode {
+            --bg: #0a0a0a;
+            --bg-secondary: #171717;
+            --text: #fafafa;
+            --text-secondary: #a3a3a3;
+            --border: #262626;
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+          }
+
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+          }
+
+          .container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+          }
+
+          .role-selection {
+            max-width: 900px;
+            width: 100%;
+          }
+
+          .header {
+            text-align: center;
+            margin-bottom: 3rem;
+          }
+
+          .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.75rem;
+          }
+
+          .subtitle {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            letter-spacing: -0.01em;
+          }
+
+          .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+          }
+
+          .role-card {
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 1.125rem;
+            padding: 2.5rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+          }
+
+          .role-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+          }
+
+          .role-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+          }
+
+          .role-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+          }
+
+          .role-desc {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.9375rem;
+            letter-spacing: -0.01em;
+          }
+
+          .footer-links {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+
+          .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9375rem;
+            transition: color 0.3s;
+          }
+
+          .footer-links a:hover {
+            color: var(--primary);
+          }
+
+          @media (max-width: 768px) {
+            .roles-grid { grid-template-columns: 1fr; }
+            .title { font-size: 2rem; }
+          }
+        `}</style>
+
+        <div className="container">
+          <div className="role-selection">
+            <div className="header">
+              <h1 className="title">Welcome Back</h1>
+              <p className="subtitle">Select your account type to continue</p>
+            </div>
+
+            <div className="roles-grid">
+              <div className="role-card" onClick={() => setRole('student')}>
+                <div className="role-icon">🎓</div>
+                <h2 className="role-title">Student</h2>
+                <p className="role-desc">
+                  Access your bookings, search hostels, and manage your profile.
+                </p>
+              </div>
+
+              <div className="role-card" onClick={() => setRole('owner')}>
+                <div className="role-icon">🏢</div>
+                <h2 className="role-title">Hostel Owner</h2>
+                <p className="role-desc">
+                  Manage your hostel, review bookings, and track payments.
+                </p>
+              </div>
+            </div>
+
+            <div className="footer-links">
+              <Link to="/">← Back to Home</Link>
+              <div>
+                <span style={{ color: 'var(--text-secondary)' }}>Don't have an account? </span>
+                <Link to="/register">Register</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
   }
 
   return (
-    <main style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'2rem 0',background:'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
+    <>
       <style>{`
-        :root { --c-primary:#667eea; --c-primary-dark:#764ba2; --c-bg:#f4f4f4; --c-bg-section:#ffffff; --c-text-primary:#333; --c-shadow:rgba(0,0,0,.15); }
-        body.dark-mode { --c-bg:#121212; --c-bg-section:#1e1e1e; --c-text-primary:#f0f0f0; --c-shadow:rgba(0,0,0,.4); }
-        body { color:var(--c-text-primary); }
-        .login-container{background:var(--c-bg-section);padding:2.5rem;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(580px,92vw);max-height:90vh;overflow-y:auto;position:relative}
-        .login-container::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:20px 20px 0 0}
-        .brand{text-align:center;margin-bottom:2rem}
-        .brand h1{margin:0;font-size:2rem;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .brand p{margin:.5rem 0 0;color:#888;font-size:.95rem}
-        .actions{display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;gap:1rem;flex-wrap:wrap}
-        input,select{width:100%;padding:.85rem 1rem;border:2px solid #e0e0e0;border-radius:12px;background:var(--c-bg-section);color:var(--c-text-primary);font-size:.95rem;transition:all .3s;box-sizing:border-box}
-        input:focus,select:focus{outline:none;border-color:var(--c-primary);box-shadow:0 0 0 3px rgba(102,126,234,.1)}
-        label{display:block;margin:1.2rem 0 .6rem;font-weight:600;color:var(--c-text-primary);font-size:.9rem}
-        label:first-of-type{margin-top:.5rem}
-        button{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:.85rem 1.5rem;border-radius:12px;cursor:pointer;font-weight:600;font-size:.95rem;transition:all .3s;box-shadow:0 4px 15px rgba(102,126,234,.4)}
-        button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(102,126,234,.6)}
-        button:active:not(:disabled){transform:translateY(0)}
-        button:disabled{opacity:.6;cursor:not-allowed}
-        .back-link{color:#667eea;text-decoration:none;font-weight:500;transition:all .3s;display:flex;align-items:center;gap:.5rem}
-        .back-link:hover{color:#764ba2;gap:.75rem}
-        .room-config{background:linear-gradient(135deg,rgba(102,126,234,.08),rgba(118,75,162,.08));padding:1.5rem;border-radius:16px;margin-top:1.5rem;border:2px solid rgba(102,126,234,.15)}
-        .room-config h4{margin:0 0 .5rem;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:1.1rem}
-        .room-config-subtitle{font-size:.85rem;color:#888;margin:0 0 1rem}
-        .room-row{display:grid;grid-template-columns:2fr 1fr;gap:.75rem;align-items:start;margin-bottom:.5rem}
-        .room-row > div{display:flex;flex-direction:column}
-        .room-row label{margin:.3rem 0 .4rem;font-size:.85rem}
-        .tabs{display:flex;gap:1rem;margin-bottom:2rem;background:#f5f5f5;padding:.5rem;border-radius:14px}
-        body.dark-mode .tabs{background:#2a2a2a}
-        .tab{flex:1;padding:.75rem;background:transparent;border:none;color:#666;border-radius:10px;cursor:pointer;font-weight:600;font-size:.95rem;transition:all .3s}
-        .tab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:white;box-shadow:0 4px 12px rgba(102,126,234,.3)}
-        .tab:hover:not(.active){background:rgba(102,126,234,.1);color:#667eea}
-        .stats-summary{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:1rem;border-radius:12px;margin-top:1.2rem;text-align:center;font-size:.9rem;font-weight:500}
-        .input-group{margin-bottom:.5rem}
-        .input-icon{position:relative;margin-bottom:0}
-        .input-icon input{padding-left:2.5rem}
-        .input-icon::before{content:'';position:absolute;left:1rem;top:50%;transform:translateY(-50%);font-size:1.1rem;opacity:.5;z-index:1}
-        .user-icon::before{content:'👤'}
-        .lock-icon::before{content:'🔒'}
-        .hotel-icon::before{content:'🏨'}
-        .photo-upload-container{margin:1.5rem 0;text-align:center}
-        .photo-preview{width:120px;height:120px;margin:0 auto 1rem;border-radius:50%;overflow:hidden;border:3px solid #667eea;background:linear-gradient(135deg,rgba(102,126,234,.1),rgba(118,75,162,.1));display:flex;align-items:center;justify-content:center;position:relative}
-        .photo-preview img{width:100%;height:100%;object-fit:cover}
-        .photo-preview-empty{font-size:3rem;opacity:.3}
-        .upload-btn-wrapper{position:relative;display:inline-block}
-        .upload-btn{background:linear-gradient(135deg,rgba(102,126,234,.15),rgba(118,75,162,.15));color:#667eea;border:2px dashed #667eea;padding:.6rem 1.2rem;border-radius:10px;cursor:pointer;font-weight:600;font-size:.85rem;transition:all .3s;display:inline-flex;align-items:center;gap:.5rem}
-        .upload-btn:hover{background:linear-gradient(135deg,rgba(102,126,234,.25),rgba(118,75,162,.25));border-style:solid}
-        .upload-btn-wrapper input[type=file]{position:absolute;left:0;top:0;opacity:0;width:100%;height:100%;cursor:pointer}
-        .photo-upload-label{display:block;margin-bottom:.5rem;font-size:.85rem;color:#888}
-        @media (max-width:600px){.room-row{grid-template-columns:1fr;gap:.5rem}.actions{flex-direction:column;align-items:stretch}.actions button,.actions .back-link{width:100%;justify-content:center}}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+          --primary: #4f46e5;
+          --accent: #06b6d4;
+          --bg: #ffffff;
+          --bg-secondary: #fafafa;
+          --text: #0a0a0a;
+          --text-secondary: #525252;
+          --border: #e5e5e5;
+          --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08);
+        }
+
+        body.dark-mode {
+          --bg: #0a0a0a;
+          --bg-secondary: #171717;
+          --text: #fafafa;
+          --text-secondary: #a3a3a3;
+          --border: #262626;
+          --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+          background: var(--bg-secondary);
+          color: var(--text);
+          -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+        }
+
+        .form-card {
+          background: var(--bg);
+          border: 1.5px solid var(--border);
+          border-radius: 1.125rem;
+          padding: 2.5rem;
+          max-width: 420px;
+          width: 100%;
+          box-shadow: var(--shadow-lg);
+        }
+
+        .form-header {
+          text-align: center;
+          margin-bottom: 2.5rem;
+        }
+
+        .role-badge {
+          display: inline-block;
+          padding: 0.4375rem 1rem;
+          background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(6, 182, 212, 0.08));
+          border: 1.5px solid rgba(79, 70, 229, 0.15);
+          border-radius: 6.25rem;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          color: var(--primary);
+          margin-bottom: 1rem;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
+        }
+
+        .form-title {
+          font-size: 1.875rem;
+          font-weight: 700;
+          margin-bottom: 0.5rem;
+          letter-spacing: -0.03em;
+        }
+
+        .form-subtitle {
+          color: var(--text-secondary);
+          font-size: 0.9375rem;
+          letter-spacing: -0.01em;
+        }
+
+        .form-group {
+          margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+          font-size: 0.875rem;
+          letter-spacing: -0.01em;
+        }
+
+        .form-input {
+          width: 100%;
+          padding: 0.875rem 1.125rem;
+          border: 1.5px solid var(--border);
+          border-radius: 0.75rem;
+          background: var(--bg-secondary);
+          color: var(--text);
+          font-size: 0.9375rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          letter-spacing: -0.01em;
+        }
+
+        .form-input:focus {
+          outline: none;
+          border-color: var(--primary);
+          background: var(--bg);
+          box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+        }
+
+        .error-message {
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+          color: white;
+          padding: 0.875rem 1.125rem;
+          border-radius: 0.75rem;
+          margin-bottom: 1.5rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          text-align: center;
+        }
+
+        .submit-btn {
+          width: 100%;
+          padding: 1rem;
+          background: linear-gradient(135deg, var(--primary), var(--accent));
+          color: white;
+          border: none;
+          border-radius: 0.75rem;
+          font-weight: 500;
+          font-size: 0.9375rem;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          letter-spacing: -0.01em;
+          box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+        }
+
+        .submit-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+        }
+
+        .submit-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .form-footer {
+          margin-top: 1.5rem;
+          text-align: center;
+          font-size: 0.875rem;
+        }
+
+        .form-footer button {
+          background: none;
+          border: none;
+          color: var(--primary);
+          cursor: pointer;
+          font-weight: 500;
+          padding: 0;
+          text-decoration: underline;
+        }
+
+        .form-footer a {
+          color: var(--primary);
+          text-decoration: none;
+          font-weight: 500;
+        }
+
+        .form-footer a:hover {
+          text-decoration: underline;
+        }
+
+        @media (max-width: 480px) {
+          .form-card { padding: 2rem 1.5rem; }
+          .form-title { font-size: 1.625rem; }
+        }
       `}</style>
 
-      <div className="login-container">
-        <div className="brand">
-          <h1>🏨 Hostel Management</h1>
-          <p>{mode === 'login' ? 'Welcome back! Sign in to your account' : 'Create your hostel management account'}</p>
-        </div>
-        
-        <div className="tabs">
-          <button className={`tab ${mode === 'login' ? 'active' : ''}`} onClick={() => setMode('login')}>
-            🔐 Login
-          </button>
-          <button className={`tab ${mode === 'register' ? 'active' : ''}`} onClick={() => setMode('register')}>
-            ✨ Register
-          </button>
-        </div>
+      <div className="container">
+        <div className="form-card">
+          <div className="form-header">
+            <span className="role-badge">{role === 'student' ? '🎓 Student' : '🏢 Owner'}</span>
+            <h1 className="form-title">Welcome Back</h1>
+            <p className="form-subtitle">Login to your account</p>
+          </div>
 
-        {mode === 'login' ? (
-          <form onSubmit={handleLogin}>
-            {errorMessage && (
-              <div style={{
-                background: 'linear-gradient(135deg, #ff6b6b, #ee5a6f)',
-                color: 'white',
-                padding: '1rem',
-                borderRadius: '12px',
-                marginBottom: '1.5rem',
-                textAlign: 'center',
-                fontWeight: '500',
-                boxShadow: '0 4px 15px rgba(255, 107, 107, 0.3)'
-              }}>
-                ⚠️ {errorMessage}
+          {error && <div className="error-message">{error}</div>}
+
+          <form onSubmit={handleSubmit}>
+            {role === 'student' ? (
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  className="form-input"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter your email"
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <div className="form-group">
+                <label className="form-label">Username</label>
+                <input
+                  type="text"
+                  name="username"
+                  className="form-input"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Enter your username"
+                  autoFocus
+                />
               </div>
             )}
-            
-            <label>Username</label>
-            <div className="input-icon user-icon">
-              <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Enter your username" />
-            </div>
-            
-            <label>Password</label>
-            <div className="input-icon lock-icon">
-              <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Enter your password" />
-            </div>
-            
-            <div className="actions">
-              <Link to="/" className="back-link">← Back to Home</Link>
-              <button type="submit" disabled={isLoading}>
-                {isLoading ? '⏳ Logging in...' : 'Login to Dashboard'}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <form onSubmit={handleRegister}>
-            {errorMessage && (
-              <div style={{
-                background: 'linear-gradient(135deg, #ff6b6b, #ee5a6f)',
-                color: 'white',
-                padding: '1rem',
-                borderRadius: '12px',
-                marginBottom: '1.5rem',
-                textAlign: 'center',
-                fontWeight: '500',
-                boxShadow: '0 4px 15px rgba(255, 107, 107, 0.3)'
-              }}>
-                ⚠️ {errorMessage}
-              </div>
-            )}
-            <div className="photo-upload-container">
-              <div className="photo-preview">
-                {hostelLogo ? (
-                  <img src={hostelLogo} alt="Hostel Logo" />
-                ) : (
-                  <span className="photo-preview-empty">🏨</span>
-                )}
-              </div>
-              <p className="photo-upload-label">Hostel Logo (Optional)</p>
-              <div className="upload-btn-wrapper">
-                <label className="upload-btn">
-                  📸 Choose Photo
-                  <input type="file" accept="image/*" onChange={handleLogoUpload} />
-                </label>
-              </div>
-            </div>
 
-            <label>Hostel Name *</label>
-            <div className="input-icon hotel-icon">
-              <input value={hostelName} onChange={e=>setHostelName(e.target.value)} placeholder="e.g., Rajesh Hostel" required />
-            </div>
-            
-            <label>Username *</label>
-            <div className="input-icon user-icon">
-              <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Choose a username" required />
-            </div>
-            
-            <label>Email Address *</label>
-            <div className="input-icon email-icon">
-              <input 
-                type="email" 
-                value={email} 
-                onChange={e=>setEmail(e.target.value)} 
-                placeholder="admin@example.com" 
-                required 
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <input
+                type="password"
+                name="password"
+                className="form-input"
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+                placeholder="Enter your password"
               />
             </div>
-            
-            <label>Password *</label>
-            <div className="input-icon lock-icon">
-              <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Create a strong password" required />
-            </div>
-            
-            <label>Confirm Password *</label>
-            <div className="input-icon lock-icon">
-              <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Re-enter your password" required />
-            </div>
-            
-            <div className="room-config">
-              <h4>🏢 Room Configuration</h4>
-              <p className="room-config-subtitle">Set up your hostel's room structure</p>
-              
-              <div className="input-group">
-                <label>🛏️ Double Sharing Rooms</label>
-                <div className="room-row">
-                  <div>
-                    <label style={{fontSize:'.8rem',opacity:.7}}>Number of Rooms</label>
-                    <input type="number" min="0" value={doubleRooms} onChange={e=>setDoubleRooms(Number(e.target.value))} placeholder="e.g., 30" />
-                  </div>
-                  <div>
-                    <label style={{fontSize:'.8rem',opacity:.7}}>Start Room #</label>
-                    <input type="number" value={doubleStartRoom} onChange={e=>setDoubleStartRoom(Number(e.target.value))} placeholder="201" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="input-group">
-                <label>🛏️ Triple Sharing Rooms</label>
-                <div className="room-row">
-                  <div>
-                    <label style={{fontSize:'.8rem',opacity:.7}}>Number of Rooms</label>
-                    <input type="number" min="0" value={tripleRooms} onChange={e=>setTripleRooms(Number(e.target.value))} placeholder="e.g., 30" />
-                  </div>
-                  <div>
-                    <label style={{fontSize:'.8rem',opacity:.7}}>Start Room #</label>
-                    <input type="number" value={tripleStartRoom} onChange={e=>setTripleStartRoom(Number(e.target.value))} placeholder="301" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="input-group">
-                <label>🛏️ Four Sharing Rooms</label>
-                <div className="room-row">
-                  <div>
-                    <label style={{fontSize:'.8rem',opacity:.7}}>Number of Rooms</label>
-                    <input type="number" min="0" value={fourRooms} onChange={e=>setFourRooms(Number(e.target.value))} placeholder="e.g., 40" />
-                  </div>
-                  <div>
-                    <label style={{fontSize:'.8rem',opacity:.7}}>Start Room #</label>
-                    <input type="number" value={fourStartRoom} onChange={e=>setFourStartRoom(Number(e.target.value))} placeholder="401" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="stats-summary">
-                📊 Total: {doubleRooms + tripleRooms + fourRooms} rooms • 
-                {doubleRooms * 2 + tripleRooms * 3 + fourRooms * 4} capacity
-              </div>
-            </div>
-            
-            <div className="actions">
-              <Link to="/" className="back-link">← Back to Home</Link>
-              <button type="submit" disabled={isLoading}>
-                {isLoading ? '⏳ Registering...' : '🚀 Register & Setup'}
-              </button>
-            </div>
+
+            <button type="submit" className="submit-btn" disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Login'}
+            </button>
           </form>
-        )}
+
+          <div className="form-footer">
+            <button type="button" onClick={() => setRole('')}>
+              ← Change Account Type
+            </button>
+            <br />
+            <span style={{ color: 'var(--text-secondary)' }}>Don't have an account? </span>
+            <Link to="/register">Register</Link>
+          </div>
+        </div>
       </div>
-    </main>
-  )
+    </>
+  );
 }
