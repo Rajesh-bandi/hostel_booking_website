@@ -245,12 +245,17 @@ export default function StudentDashboard() {
       }
 
       .header {
-        background: var(--bg);
+        background: rgba(255, 255, 255, 0.85);
         border-bottom: 1px solid var(--border);
         position: sticky;
         top: 0;
         z-index: 100;
-        backdrop-filter: blur(20px);
+        backdrop-filter: blur(20px) saturate(180%);
+        transition: all 0.3s ease;
+      }
+
+      .dark .header {
+        background: rgba(10, 10, 10, 0.85);
       }
 
       .header-inner {
@@ -260,14 +265,19 @@ export default function StudentDashboard() {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 1rem;
       }
 
       .logo {
         font-size: 1.25rem;
         font-weight: 700;
         letter-spacing: -0.025em;
-        color: var(--primary);
+        background: linear-gradient(135deg, var(--primary), #06b6d4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         text-decoration: none;
+        flex-shrink: 0;
       }
 
       .user-info {
@@ -276,6 +286,10 @@ export default function StudentDashboard() {
         gap: 0.5rem;
         font-size: 0.875rem;
         color: var(--text-secondary);
+        background: var(--bg-secondary);
+        padding: 0.375rem 0.875rem;
+        border-radius: 6rem;
+        border: 1px solid var(--border);
       }
 
       .user-name {
@@ -285,7 +299,7 @@ export default function StudentDashboard() {
 
       .nav-links {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.375rem;
       }
 
       .nav-link {
@@ -299,7 +313,7 @@ export default function StudentDashboard() {
       }
 
       .nav-link:hover {
-        color: var(--text);
+        color: var(--primary);
         background: var(--bg-tertiary);
       }
 
@@ -334,19 +348,39 @@ export default function StudentDashboard() {
       }
 
       .welcome-section {
+        background: linear-gradient(135deg, var(--primary) 0%, #06b6d4 100%);
+        border-radius: 1.25rem;
+        padding: 2rem 2.5rem;
         margin-bottom: 2rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .welcome-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 50%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
       }
 
       .welcome-title {
         font-size: 1.75rem;
         font-weight: 700;
         letter-spacing: -0.025em;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.375rem;
+        position: relative;
+        z-index: 1;
       }
 
       .welcome-subtitle {
-        color: var(--text-secondary);
+        opacity: 0.9;
         font-size: 0.9375rem;
+        position: relative;
+        z-index: 1;
       }
 
       .grid {
@@ -819,6 +853,16 @@ export default function StudentDashboard() {
       </header>
 
       <main className="main">
+        {/* Welcome Banner */}
+        <div className="welcome-section">
+          <h1 className="welcome-title">Welcome back, {user?.name?.split(' ')[0] || 'Student'}! 👋</h1>
+          <p className="welcome-subtitle">
+            {activeBooking
+              ? `You're currently staying at ${activeBooking.hostel?.name || 'a hostel'}`
+              : 'Find and book your perfect hostel today'}
+          </p>
+        </div>
+
         {/* Search Section */}
         <section className="search-section">
           <h2 className="search-title">🔍 Find Your Perfect Hostel</h2>

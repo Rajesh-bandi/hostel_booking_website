@@ -9,6 +9,7 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
   const [userRole, setUserRole] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -251,6 +252,110 @@ export default function Home() {
           transform: translateY(-1px) scale(1.05);
           border-color: var(--primary);
           box-shadow: var(--shadow);
+        }
+
+        .mobile-menu-btn {
+          display: none;
+          background: var(--bg-secondary);
+          border: 1.5px solid var(--border);
+          border-radius: 0.625rem;
+          padding: 0.5rem;
+          cursor: pointer;
+          font-size: 1.125rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          width: 2.5rem;
+          height: 2.5rem;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .mobile-menu-btn:hover {
+          transform: translateY(-1px) scale(1.05);
+          border-color: var(--primary);
+        }
+
+        .mobile-nav {
+          display: none;
+          position: fixed;
+          top: 5rem;
+          left: 0;
+          right: 0;
+          background: rgba(255, 255, 255, 0.97);
+          backdrop-filter: blur(20px);
+          border-bottom: 1px solid var(--border);
+          padding: 1.5rem;
+          flex-direction: column;
+          gap: 0.5rem;
+          z-index: 999;
+          animation: fadeIn 0.2s ease;
+        }
+
+        body.dark-mode .mobile-nav {
+          background: rgba(10, 10, 10, 0.97);
+        }
+
+        .mobile-nav.open {
+          display: flex;
+        }
+
+        .mobile-nav a,
+        .mobile-nav button {
+          padding: 0.875rem 1rem;
+          border-radius: 0.625rem;
+          font-weight: 500;
+          font-size: 1rem;
+          color: var(--text);
+          text-decoration: none;
+          transition: all 0.2s;
+          background: transparent;
+          border: none;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .mobile-nav a:hover,
+        .mobile-nav button:hover {
+          background: var(--bg-secondary);
+          color: var(--primary);
+        }
+
+        .mobile-nav-divider {
+          height: 1px;
+          background: var(--border);
+          margin: 0.5rem 0;
+        }
+
+        /* Stats Section */
+        .stats-section {
+          background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+          padding: 3.5rem 2.5rem;
+        }
+
+        .stats-grid {
+          max-width: 1320px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 2rem;
+        }
+
+        .stat-item {
+          text-align: center;
+          color: white;
+        }
+
+        .stat-number {
+          font-size: 2.75rem;
+          font-weight: 800;
+          letter-spacing: -0.04em;
+          line-height: 1;
+          margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+          font-size: 0.9375rem;
+          opacity: 0.85;
+          letter-spacing: -0.01em;
         }
 
         /* Hero */
@@ -639,6 +744,7 @@ export default function Home() {
         /* Responsive */
         @media (max-width: 768px) {
           .nav-links { display: none; }
+          .mobile-menu-btn { display: flex; }
           .nav-container { padding: 1rem 1.5rem; }
           .hero { padding: 7rem 1.5rem 5rem; margin-top: 4rem; }
           .hero-title { font-size: 2.75rem; }
@@ -653,12 +759,16 @@ export default function Home() {
           .cta-title { font-size: 2.25rem; }
           .cta-subtitle { font-size: 1.125rem; }
           .footer { padding: 2.5rem 1.5rem; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+          .nav-actions .btn-outline { display: none; }
         }
 
         @media (max-width: 480px) {
           .hero-title { font-size: 2.25rem; }
           .section-title { font-size: 1.875rem; }
           .cta-title { font-size: 1.875rem; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+          .stat-number { font-size: 2rem; }
         }
       `}</style>
 
@@ -702,9 +812,35 @@ export default function Home() {
             <button className="theme-btn" onClick={toggleTheme}>
               {document.body.classList.contains('dark-mode') ? '☀️' : '🌙'}
             </button>
+            <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              {isMobileMenuOpen ? '✕' : '☰'}
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Mobile Nav Overlay */}
+      <nav className={`mobile-nav ${isMobileMenuOpen ? 'open' : ''}`}>
+        <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>🏠 Home</Link>
+        <Link to="/search" onClick={() => setIsMobileMenuOpen(false)}>🔍 Browse Hostels</Link>
+        <Link to="/hostel-info" onClick={() => setIsMobileMenuOpen(false)}>ℹ️ How It Works</Link>
+        <div className="mobile-nav-divider" />
+        {isLoggedIn ? (
+          <>
+            <Link to={userRole === 'student' ? '/student/dashboard' : '/owner/dashboard'} onClick={() => setIsMobileMenuOpen(false)}>
+              📊 Dashboard
+            </Link>
+            <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} style={{ color: '#dc2626' }}>
+              🚪 Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>🔐 Login</Link>
+            <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>✨ Sign Up Free</Link>
+          </>
+        )}
+      </nav>
 
       <section className="hero">
         <div className="hero-content">
@@ -742,6 +878,28 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Stats Section */}
+      <div className="stats-section">
+        <div className="stats-grid">
+          <div className="stat-item">
+            <div className="stat-number">10K+</div>
+            <div className="stat-label">Students Housed</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-number">500+</div>
+            <div className="stat-label">Verified Hostels</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-number">50+</div>
+            <div className="stat-label">Cities Covered</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-number">4.8★</div>
+            <div className="stat-label">Average Rating</div>
+          </div>
+        </div>
+      </div>
 
       <section className="features">
         <div className="container">
@@ -829,9 +987,16 @@ export default function Home() {
 
       <footer className="footer">
         <div className="footer-content">
-          <div className="footer-logo">HostelHub</div>
+          <div className="footer-logo">🏠 HostelHub</div>
           <p className="footer-text">Your Trusted Student Accommodation Platform</p>
-          <p className="footer-text" style={{ fontSize: '0.875rem', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', margin: '1.5rem 0', flexWrap: 'wrap' }}>
+            <Link to="/" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--primary)'} onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}>Home</Link>
+            <Link to="/search" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--primary)'} onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}>Browse Hostels</Link>
+            <Link to="/hostel-info" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--primary)'} onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}>How It Works</Link>
+            <Link to="/login" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--primary)'} onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}>Login</Link>
+            <Link to="/register" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--primary)'} onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}>Register</Link>
+          </div>
+          <p className="footer-text" style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
             © 2026 HostelHub. All rights reserved.
           </p>
         </div>
