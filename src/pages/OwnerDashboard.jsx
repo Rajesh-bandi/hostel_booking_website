@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import OwnerNavbar from '../components/OwnerNavbar'
+import {
+  BuildingIcon, BedIcon, ClipboardIcon, ClockIcon, TicketIcon,
+  PlusIcon, EditIcon, MapPinIcon, TrendingUpIcon
+} from '../components/Icons'
 
 export default function OwnerDashboard() {
   const navigate = useNavigate()
-  const [isDark, setIsDark] = useState(false)
   const [stats, setStats] = useState({
     totalHostels: 0,
     totalRooms: 0,
@@ -14,35 +16,6 @@ export default function OwnerDashboard() {
   })
   const [hostels, setHostels] = useState([])
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Initialize theme
-    const savedTheme = localStorage.getItem('theme')
-    setIsDark(savedTheme === 'dark')
-    
-    if (savedTheme === 'dark') {
-      document.body.classList.add('dark-theme')
-    } else {
-      document.body.classList.remove('dark-theme')
-    }
-
-    // Listen for theme changes
-    const handleThemeChange = () => {
-      const newTheme = localStorage.getItem('theme')
-      setIsDark(newTheme === 'dark')
-      if (newTheme === 'dark') {
-        document.body.classList.add('dark-theme')
-      } else {
-        document.body.classList.remove('dark-theme')
-      }
-    }
-
-    window.addEventListener('themeChange', handleThemeChange)
-    
-    return () => {
-      window.removeEventListener('themeChange', handleThemeChange)
-    }
-  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -104,534 +77,324 @@ export default function OwnerDashboard() {
     fetchData()
   }, [])
 
+  const statCards = [
+    { icon: BuildingIcon, label: 'Total Hostels', value: stats.totalHostels, color: 'var(--primary)' },
+    { icon: BedIcon, label: 'Total Rooms', value: stats.totalRooms, color: 'var(--accent)' },
+    { icon: ClipboardIcon, label: 'Active Bookings', value: stats.activeBookings, color: 'var(--success)' },
+    { icon: ClockIcon, label: 'Pending Requests', value: stats.pendingRequests, color: 'var(--warning)' },
+    { icon: TicketIcon, label: 'Open Complaints', value: stats.openComplaints, color: stats.openComplaints > 0 ? 'var(--warning)' : 'var(--text-secondary)', onClick: () => navigate('/owner/complaints') },
+  ]
+
   return (
-    <div className={`owner-dashboard-wrapper ${isDark ? 'dark-theme' : 'light-theme'}`}>
-      <OwnerNavbar />
-
+    <div style={{ minHeight: 'calc(100vh - var(--header-height))', background: 'var(--bg-body)' }}>
       <style>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-
-        .owner-dashboard-wrapper {
-          min-height: 100vh;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-          transition: all 0.3s ease;
-        }
-
-        .light-theme {
-          background: #ffffff;
-          color: #111827;
-        }
-
-        .dark-theme {
-          background: #0f172a;
-          color: #f1f5f9;
-        }
-
-        .owner-container {
-          max-width: 1280px;
+        .od-container {
+          max-width: var(--max-width);
           margin: 0 auto;
-          padding: 2.5rem 2rem;
+          padding: var(--space-8) var(--space-6);
+          animation: fadeInUp 0.4s ease both;
         }
 
-        .dashboard-header {
-          margin-bottom: 2.5rem;
+        .od-header {
+          margin-bottom: var(--space-8);
         }
 
-        .dashboard-title {
-          font-size: 1.875rem;
-          font-weight: 600;
-          color: #111827;
-          margin-bottom: 0.375rem;
-          letter-spacing: -0.025em;
+        .od-title {
+          font-size: var(--text-3xl);
+          font-weight: 700;
+          color: var(--text);
+          margin-bottom: var(--space-1);
+          letter-spacing: var(--tracking-tighter);
         }
 
-        .dark-theme .dashboard-title {
-          color: #f1f5f9;
+        .od-subtitle {
+          font-size: var(--text-base);
+          color: var(--text-secondary);
         }
 
-        .dashboard-subtitle {
-          font-size: 0.9375rem;
-          color: #6b7280;
-        }
-
-        .dark-theme .dashboard-subtitle {
-          color: #94a3b8;
-        }
-
-        .stats-grid {
+        .od-stats {
           display: grid;
           grid-template-columns: repeat(5, 1fr);
-          gap: 1.25rem;
-          margin-bottom: 3rem;
+          gap: var(--space-4);
+          margin-bottom: var(--space-8);
         }
 
-        .stat-card {
-          background: #f8fafc;
-          padding: 1.5rem;
-          border-radius: 1rem;
-          border: 1px solid #e2e8f0;
-          transition: all 0.2s ease;
+        .od-stat {
+          background: var(--bg);
+          padding: var(--space-5);
+          border-radius: var(--radius-xl);
+          border: 1px solid var(--border);
+          transition: all var(--duration-normal) var(--ease-default);
+          cursor: default;
         }
 
-        .stat-card:hover {
-          border-color: #cbd5e1;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        .od-stat:hover {
+          box-shadow: var(--shadow-md);
+          transform: translateY(-2px);
         }
 
-        .dark-theme .stat-card {
-          background: #1e293b;
-          border-color: #334155;
+        .od-stat-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: var(--space-3);
         }
 
-        .dark-theme .stat-card:hover {
-          border-color: #475569;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .stat-icon {
-          font-size: 1.5rem;
-          margin-bottom: 0.75rem;
-        }
-
-        .stat-number {
-          font-size: 2rem;
+        .od-stat-value {
+          font-size: var(--text-3xl);
           font-weight: 700;
-          color: #111827;
-          margin-bottom: 0.25rem;
-          letter-spacing: -0.025em;
+          color: var(--text);
+          letter-spacing: var(--tracking-tighter);
+          line-height: 1;
+          margin-bottom: var(--space-1);
         }
 
-        .dark-theme .stat-number {
-          color: #f1f5f9;
-        }
-
-        .stat-label {
-          font-size: 0.875rem;
-          color: #6b7280;
+        .od-stat-label {
+          font-size: var(--text-sm);
+          color: var(--text-secondary);
           font-weight: 500;
         }
 
-        .dark-theme .stat-label {
-          color: #94a3b8;
-        }
-
-        .section-header {
+        .od-section-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 1.5rem;
+          margin-bottom: var(--space-5);
         }
 
-        .section-title {
-          font-size: 1.25rem;
+        .od-section-title {
+          font-size: var(--text-xl);
           font-weight: 600;
-          color: #111827;
+          color: var(--text);
         }
 
-        .dark-theme .section-title {
-          color: #f1f5f9;
-        }
-
-        .btn-add {
-          background: #111827;
-          color: white;
-          border: none;
-          padding: 0.625rem 1.25rem;
-          border-radius: 0.5rem;
-          font-weight: 500;
-          font-size: 0.875rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .btn-add:hover {
-          background: #1f2937;
-          transform: translateY(-1px);
-        }
-
-        .dark-theme .btn-add {
-          background: #3b82f6;
-        }
-
-        .dark-theme .btn-add:hover {
-          background: #2563eb;
-        }
-
-        .hostels-grid {
+        .od-hostels {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 1.25rem;
+          gap: var(--space-5);
         }
 
-        .hostel-card {
-          background: #ffffff;
-          border-radius: 1rem;
-          border: 1px solid #e2e8f0;
+        .od-hostel {
+          background: var(--bg);
+          border-radius: var(--radius-xl);
+          border: 1px solid var(--border);
           overflow: hidden;
-          transition: all 0.2s ease;
+          transition: all var(--duration-normal) var(--ease-default);
         }
 
-        .hostel-card:hover {
-          border-color: #cbd5e1;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        .od-hostel:hover {
+          box-shadow: var(--shadow-lg);
+          transform: translateY(-3px);
         }
 
-        .dark-theme .hostel-card {
-          background: #1e293b;
-          border-color: #334155;
-        }
-
-        .dark-theme .hostel-card:hover {
-          border-color: #475569;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-        }
-
-        .hostel-header {
-          background: #111827;
-          padding: 1.25rem 1.5rem;
+        .od-hostel-top {
+          background: linear-gradient(135deg, var(--primary) 0%, var(--primary-700) 100%);
+          padding: var(--space-5) var(--space-5);
           color: white;
         }
 
-        .dark-theme .hostel-header {
-          background: #0f172a;
-        }
-
-        .hostel-name {
-          font-size: 1.125rem;
+        .od-hostel-name {
+          font-size: var(--text-lg);
           font-weight: 600;
-          margin-bottom: 0.375rem;
+          margin-bottom: var(--space-1);
         }
 
-        .hostel-location {
-          font-size: 0.8125rem;
-          opacity: 0.8;
+        .od-hostel-location {
+          font-size: var(--text-sm);
+          opacity: 0.85;
           display: flex;
           align-items: center;
-          gap: 0.375rem;
+          gap: var(--space-1);
         }
 
-        .hostel-body {
-          padding: 1.25rem 1.5rem;
+        .od-hostel-body {
+          padding: var(--space-4) var(--space-5);
         }
 
-        .hostel-stat-row {
+        .od-hostel-row {
           display: flex;
           justify-content: space-between;
-          padding: 0.625rem 0;
-          border-bottom: 1px solid #f1f5f9;
-          font-size: 0.875rem;
+          align-items: center;
+          padding: var(--space-3) 0;
+          border-bottom: 1px solid var(--border-light);
+          font-size: var(--text-sm);
         }
 
-        .dark-theme .hostel-stat-row {
-          border-bottom-color: #334155;
-        }
-
-        .hostel-stat-row:last-child {
+        .od-hostel-row:last-child {
           border-bottom: none;
         }
 
-        .hostel-stat-label {
-          color: #6b7280;
+        .od-hostel-row-label {
+          color: var(--text-secondary);
         }
 
-        .dark-theme .hostel-stat-label {
-          color: #94a3b8;
-        }
-
-        .hostel-stat-value {
-          color: #111827;
+        .od-hostel-row-value {
           font-weight: 600;
+          color: var(--text);
         }
 
-        .dark-theme .hostel-stat-value {
-          color: #f1f5f9;
-        }
-
-        .hostel-actions {
+        .od-hostel-actions {
           display: flex;
-          gap: 0.625rem;
-          padding: 1rem 1.5rem;
-          border-top: 1px solid #f1f5f9;
-          background: #f8fafc;
+          gap: var(--space-2);
+          padding: var(--space-3) var(--space-5) var(--space-5);
         }
 
-        .dark-theme .hostel-actions {
-          border-top-color: #334155;
-          background: #0f172a;
-        }
-
-        .btn-action {
+        .od-hostel-actions .btn {
           flex: 1;
-          padding: 0.625rem 1rem;
-          border-radius: 0.5rem;
-          font-weight: 500;
-          font-size: 0.8125rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
+          justify-content: center;
+        }
+
+        .od-empty {
           text-align: center;
-          text-decoration: none;
+          padding: var(--space-16) var(--space-8);
+          background: var(--bg);
+          border-radius: var(--radius-xl);
+          border: 2px dashed var(--border);
+        }
+
+        .od-empty-icon {
+          width: 64px;
+          height: 64px;
+          background: var(--primary-50);
+          border-radius: var(--radius-xl);
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.375rem;
+          margin: 0 auto var(--space-4);
+          color: var(--primary);
         }
 
-        .btn-manage {
-          background: #3b82f6;
-          color: white;
-          border: none;
+        body.dark-mode .od-empty-icon,
+        body.dark-theme .od-empty-icon {
+          background: rgba(99, 102, 241, 0.12);
         }
 
-        .btn-manage:hover {
-          background: #2563eb;
-        }
-
-        .btn-edit {
-          background: transparent;
-          color: #6b7280;
-          border: 1px solid #e2e8f0;
-        }
-
-        .btn-edit:hover {
-          background: #f1f5f9;
-          color: #111827;
-          border-color: #cbd5e1;
-        }
-
-        .dark-theme .btn-edit {
-          color: #94a3b8;
-          border-color: #475569;
-        }
-
-        .dark-theme .btn-edit:hover {
-          background: #334155;
-          color: #f1f5f9;
-        }
-
-        .btn-delete {
-          background: transparent;
-          color: #ef4444;
-          border: 1px solid #fecaca;
-        }
-
-        .btn-delete:hover {
-          background: #fef2f2;
-          border-color: #f87171;
-        }
-
-        .dark-theme .btn-delete {
-          border-color: #7f1d1d;
-        }
-
-        .dark-theme .btn-delete:hover {
-          background: #7f1d1d;
-          color: #fecaca;
-        }
-
-        .empty-state {
-          text-align: center;
-          padding: 4rem 2rem;
-          background: #f8fafc;
-          border-radius: 1rem;
-          border: 1px dashed #e2e8f0;
-        }
-
-        .dark-theme .empty-state {
-          background: #1e293b;
-          border-color: #334155;
-        }
-
-        .empty-icon {
-          font-size: 3rem;
-          margin-bottom: 1rem;
-        }
-
-        .empty-title {
-          font-size: 1.125rem;
+        .od-empty-title {
+          font-size: var(--text-lg);
           font-weight: 600;
-          color: #111827;
-          margin-bottom: 0.5rem;
+          color: var(--text);
+          margin-bottom: var(--space-2);
         }
 
-        .dark-theme .empty-title {
-          color: #f1f5f9;
+        .od-empty-text {
+          color: var(--text-secondary);
+          margin-bottom: var(--space-6);
+          font-size: var(--text-sm);
         }
 
-        .empty-text {
-          color: #6b7280;
-          margin-bottom: 1.5rem;
-        }
-
-        .dark-theme .empty-text {
-          color: #94a3b8;
-        }
-
-        .loading {
+        .od-loading {
           display: flex;
           justify-content: center;
           align-items: center;
-          padding: 4rem;
+          padding: var(--space-16);
         }
 
-        .spinner {
-          width: 2.5rem;
-          height: 2.5rem;
-          border: 3px solid #e2e8f0;
-          border-top-color: #3b82f6;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        .dark-theme .spinner {
-          border-color: #334155;
-          border-top-color: #3b82f6;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        /* Mobile Responsive */
         @media (max-width: 1024px) {
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-          .hostels-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
+          .od-stats { grid-template-columns: repeat(3, 1fr); }
+          .od-hostels { grid-template-columns: repeat(2, 1fr); }
         }
 
         @media (max-width: 640px) {
-          .owner-container {
-            padding: 1.5rem 1rem;
-          }
-          .dashboard-title {
-            font-size: 1.5rem;
-          }
-          .stats-grid {
-            grid-template-columns: 1fr;
-            gap: 1rem;
-          }
-          .hostels-grid {
-            grid-template-columns: 1fr;
-          }
-          .section-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-          }
-          .btn-add {
-            width: 100%;
-            justify-content: center;
-          }
-          .hostel-actions {
-            flex-direction: column;
-          }
+          .od-container { padding: var(--space-5) var(--space-4); }
+          .od-stats { grid-template-columns: repeat(2, 1fr); }
+          .od-hostels { grid-template-columns: 1fr; }
+          .od-section-header { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+          .od-hostel-actions { flex-direction: column; }
         }
       `}</style>
 
-      <div className="owner-container">
-        <div className="dashboard-header">
-          <h1 className="dashboard-title">📊 Owner Dashboard</h1>
-          <p className="dashboard-subtitle">Manage your hostels, rooms, and bookings</p>
+      <div className="od-container">
+        <div className="od-header">
+          <h1 className="od-title">Dashboard</h1>
+          <p className="od-subtitle">Manage your hostels, rooms, and bookings</p>
         </div>
 
         {/* Stats */}
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon">🏢</div>
-            <div className="stat-number">{stats.totalHostels}</div>
-            <div className="stat-label">Total Hostels</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">🛏️</div>
-            <div className="stat-number">{stats.totalRooms}</div>
-            <div className="stat-label">Total Rooms</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">📋</div>
-            <div className="stat-number">{stats.activeBookings}</div>
-            <div className="stat-label">Active Bookings</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">⏳</div>
-            <div className="stat-number">{stats.pendingRequests}</div>
-            <div className="stat-label">Pending Requests</div>
-          </div>
-          <div 
-            className="stat-card" 
-            onClick={() => navigate('/owner/complaints')} 
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="stat-icon">🎫</div>
-            <div className="stat-number" style={{ color: stats.openComplaints > 0 ? '#f59e0b' : 'inherit' }}>
-              {stats.openComplaints}
+        <div className="od-stats animate-stagger">
+          {statCards.map((stat, i) => (
+            <div
+              key={i}
+              className="od-stat"
+              onClick={stat.onClick}
+              style={stat.onClick ? { cursor: 'pointer' } : {}}
+            >
+              <div className="od-stat-icon" style={{ background: `${stat.color}15`, color: stat.color }}>
+                <stat.icon size={20} />
+              </div>
+              <div className="od-stat-value" style={{ color: stat.color }}>{stat.value}</div>
+              <div className="od-stat-label">{stat.label}</div>
             </div>
-            <div className="stat-label">Open Complaints</div>
-          </div>
+          ))}
         </div>
 
         {/* Hostels Section */}
-        <div className="section-header">
-          <h2 className="section-title">Your Hostels</h2>
-          <button onClick={() => navigate('/owner/hostels/add')} className="btn-add">
-            ➕ Add Hostel
+        <div className="od-section-header">
+          <h2 className="od-section-title">Your Hostels</h2>
+          <button onClick={() => navigate('/owner/hostels/add')} className="btn btn-primary">
+            <PlusIcon size={16} />
+            Add Hostel
           </button>
         </div>
 
         {loading ? (
-          <div className="loading">Loading your hostels...</div>
+          <div className="od-loading">
+            <div className="spinner spinner-lg"></div>
+          </div>
         ) : hostels.length > 0 ? (
-          <div className="hostels-grid">
+          <div className="od-hostels animate-stagger">
             {hostels.map(hostel => (
-              <div key={hostel._id} className="hostel-card">
-                <div className="hostel-header">
-                  <div className="hostel-name">{hostel.name}</div>
-                  <div className="hostel-location">📍 {hostel.address}, {hostel.city}</div>
-                </div>
-                <div className="hostel-body">
-                  <div className="hostel-stat-row">
-                    <span className="hostel-stat-label">Single Rooms</span>
-                    <span className="hostel-stat-value">{hostel.roomConfig?.single?.count || 0}</span>
-                  </div>
-                  <div className="hostel-stat-row">
-                    <span className="hostel-stat-label">Double Rooms</span>
-                    <span className="hostel-stat-value">{hostel.roomConfig?.double?.count || 0}</span>
-                  </div>
-                  <div className="hostel-stat-row">
-                    <span className="hostel-stat-label">Triple Rooms</span>
-                    <span className="hostel-stat-value">{hostel.roomConfig?.triple?.count || 0}</span>
-                  </div>
-                  <div className="hostel-stat-row">
-                    <span className="hostel-stat-label">Four-Person Rooms</span>
-                    <span className="hostel-stat-value">{hostel.roomConfig?.four?.count || 0}</span>
+              <div key={hostel._id} className="od-hostel">
+                <div className="od-hostel-top">
+                  <div className="od-hostel-name">{hostel.name}</div>
+                  <div className="od-hostel-location">
+                    <MapPinIcon size={14} />
+                    {hostel.address}, {hostel.city}
                   </div>
                 </div>
-                <div className="hostel-actions">
-                  <button className="action-btn" onClick={() => navigate(`/owner/hostels/${hostel._id}/edit`)}>
-                    ✏️ Edit
+                <div className="od-hostel-body">
+                  <div className="od-hostel-row">
+                    <span className="od-hostel-row-label">Single Rooms</span>
+                    <span className="od-hostel-row-value">{hostel.roomConfig?.single?.count || 0}</span>
+                  </div>
+                  <div className="od-hostel-row">
+                    <span className="od-hostel-row-label">Double Rooms</span>
+                    <span className="od-hostel-row-value">{hostel.roomConfig?.double?.count || 0}</span>
+                  </div>
+                  <div className="od-hostel-row">
+                    <span className="od-hostel-row-label">Triple Rooms</span>
+                    <span className="od-hostel-row-value">{hostel.roomConfig?.triple?.count || 0}</span>
+                  </div>
+                  <div className="od-hostel-row">
+                    <span className="od-hostel-row-label">Four-Person Rooms</span>
+                    <span className="od-hostel-row-value">{hostel.roomConfig?.four?.count || 0}</span>
+                  </div>
+                </div>
+                <div className="od-hostel-actions">
+                  <button className="btn btn-outline btn-sm" onClick={() => navigate(`/owner/hostels/${hostel._id}/edit`)}>
+                    <EditIcon size={14} />
+                    Edit
                   </button>
-                  <button className="action-btn" onClick={() => navigate('/owner/rooms')}>
-                    🛏️ Manage
+                  <button className="btn btn-primary btn-sm" onClick={() => navigate('/owner/rooms')}>
+                    <BedIcon size={14} />
+                    Manage
                   </button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="empty-state">
-            <div className="empty-icon">🏠</div>
-            <div className="empty-title">No Hostels Yet</div>
-            <p className="empty-text">Start by adding your first hostel property</p>
-            <button onClick={() => navigate('/owner/hostels/add')} className="btn-primary">
-              ➕ Add Your First Hostel
+          <div className="od-empty">
+            <div className="od-empty-icon">
+              <BuildingIcon size={28} />
+            </div>
+            <div className="od-empty-title">No Hostels Yet</div>
+            <p className="od-empty-text">Start by adding your first hostel property</p>
+            <button onClick={() => navigate('/owner/hostels/add')} className="btn btn-primary">
+              <PlusIcon size={16} />
+              Add Your First Hostel
             </button>
           </div>
         )}
