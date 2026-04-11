@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI, bookingsAPI, hostelsAPI, reviewsAPI } from '../services/api';
+import StudentComplaints from '../components/StudentComplaints';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -1045,6 +1046,9 @@ export default function StudentDashboard() {
             </div>
           </div>
         )}
+
+        {/* Student Complaints Section */}
+        <StudentComplaints activeBooking={activeBooking} />
       </main>
     </div>
   );

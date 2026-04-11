@@ -452,6 +452,7 @@ export default function OwnerNavbar() {
           <li><Link to="/owner/hostels" className="navbar-link">🏠 Hostels</Link></li>
           <li><Link to="/owner/rooms" className="navbar-link">🛏️ Rooms</Link></li>
           <li><Link to="/owner/bookings" className="navbar-link">📋 Bookings</Link></li>
+          <li><Link to="/owner/complaints" className="navbar-link">🎫 Complaints</Link></li>
         </ul>
 
         <div className="navbar-profile">

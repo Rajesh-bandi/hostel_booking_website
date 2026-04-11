@@ -9,7 +9,8 @@ export default function OwnerDashboard() {
     totalHostels: 0,
     totalRooms: 0,
     activeBookings: 0,
-    pendingRequests: 0
+    pendingRequests: 0,
+    openComplaints: 0
   })
   const [hostels, setHostels] = useState([])
   const [loading, setLoading] = useState(true)
@@ -47,15 +48,26 @@ export default function OwnerDashboard() {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:5000/api/hostels/owner/my', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+        
+        // Fetch hostels and complaint stats in parallel
+        const [hostelResponse, complaintResponse] = await Promise.all([
+          fetch('http://localhost:5000/api/hostels/owner/my', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch('http://localhost:5000/api/complaints/owner/stats', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        ])
 
-        const data = await response.json()
+        const data = await hostelResponse.json()
+        const complaintData = await complaintResponse.json()
 
-        if (response.ok && data.success) {
+        let openComplaints = 0
+        if (complaintData.success && complaintData.stats) {
+          openComplaints = (complaintData.stats.open || 0) + (complaintData.stats.in_progress || 0)
+        }
+
+        if (hostelResponse.ok && data.success) {
           const hostels = data.hostels || []
 
           if (hostels.length > 0) {
@@ -75,8 +87,11 @@ export default function OwnerDashboard() {
               totalHostels: hostels.length,
               totalRooms,
               activeBookings: 0,
-              pendingRequests: 0
+              pendingRequests: 0,
+              openComplaints
             })
+          } else {
+            setStats(prev => ({ ...prev, openComplaints }))
           }
         }
       } catch (err) {
@@ -149,7 +164,7 @@ export default function OwnerDashboard() {
 
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(5, 1fr);
           gap: 1.25rem;
           margin-bottom: 3rem;
         }
@@ -549,6 +564,17 @@ export default function OwnerDashboard() {
             <div className="stat-icon">⏳</div>
             <div className="stat-number">{stats.pendingRequests}</div>
             <div className="stat-label">Pending Requests</div>
+          </div>
+          <div 
+            className="stat-card" 
+            onClick={() => navigate('/owner/complaints')} 
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="stat-icon">🎫</div>
+            <div className="stat-number" style={{ color: stats.openComplaints > 0 ? '#f59e0b' : 'inherit' }}>
+              {stats.openComplaints}
+            </div>
+            <div className="stat-label">Open Complaints</div>
           </div>
         </div>
 

@@ -10,6 +10,8 @@ import hostelRoutes from './routes/hostels.js';
 import locationRoutes from './routes/location.js';
 import bookingRoutes from './routes/bookings.js';
 import reviewRoutes from './routes/reviews.js';
+import chatbotRoutes from './routes/chatbot.js';
+import complaintRoutes from './routes/complaints.js';
 
 dotenv.config();
 
@@ -36,6 +38,8 @@ app.use('/api/hostels', hostelRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/complaints', complaintRoutes);
 
 // Health check
 app.get('/', (req, res) => {
