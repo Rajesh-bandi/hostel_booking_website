@@ -92,7 +92,7 @@ export default function OwnerNavbar() {
         }
 
         .owner-navbar {
-          background: #ffffff;
+          background: rgba(255, 255, 255, 0.9);
           padding: 0 2rem;
           display: flex;
           align-items: center;
@@ -102,10 +102,12 @@ export default function OwnerNavbar() {
           top: 0;
           z-index: 100;
           border-bottom: 1px solid #e2e8f0;
+          backdrop-filter: blur(20px) saturate(180%);
+          transition: all 0.3s ease;
         }
 
         body.dark-theme .owner-navbar {
-          background: #0f172a;
+          background: rgba(15, 23, 42, 0.9);
           border-bottom-color: #1e293b;
         }
 
@@ -114,14 +116,25 @@ export default function OwnerNavbar() {
           align-items: center;
           gap: 0.5rem;
           text-decoration: none;
-          font-weight: 600;
+          font-weight: 700;
           font-size: 1.25rem;
-          color: #111827;
+          background: linear-gradient(135deg, #4f46e5, #06b6d4);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
           letter-spacing: -0.025em;
+          transition: opacity 0.2s;
+        }
+
+        .navbar-brand:hover {
+          opacity: 0.85;
         }
 
         body.dark-theme .navbar-brand {
-          color: #f1f5f9;
+          background: linear-gradient(135deg, #6366f1, #22d3ee);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .navbar-menu {
@@ -137,16 +150,17 @@ export default function OwnerNavbar() {
           font-size: 0.875rem;
           font-weight: 500;
           padding: 0.5rem 0.875rem;
-          border-radius: 0.375rem;
+          border-radius: 0.5rem;
           display: flex;
           align-items: center;
           gap: 0.375rem;
-          transition: all 0.15s ease;
+          transition: all 0.2s ease;
+          position: relative;
         }
 
         .navbar-link:hover {
-          color: #111827;
-          background: #f1f5f9;
+          color: #4f46e5;
+          background: rgba(79, 70, 229, 0.06);
         }
 
         body.dark-theme .navbar-link {
@@ -154,8 +168,8 @@ export default function OwnerNavbar() {
         }
 
         body.dark-theme .navbar-link:hover {
-          color: #f1f5f9;
-          background: #1e293b;
+          color: #818cf8;
+          background: rgba(99, 102, 241, 0.1);
         }
 
         .navbar-profile {

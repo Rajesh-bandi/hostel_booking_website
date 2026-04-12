@@ -174,12 +174,32 @@ export default function OwnerDashboard() {
           padding: 1.5rem;
           border-radius: 1rem;
           border: 1px solid #e2e8f0;
-          transition: all 0.2s ease;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .stat-card::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, #4f46e5, #06b6d4);
+          transform: scaleX(0);
+          transition: transform 0.3s ease;
+          transform-origin: left;
         }
 
         .stat-card:hover {
           border-color: #cbd5e1;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+          transform: translateY(-3px);
+        }
+
+        .stat-card:hover::after {
+          transform: scaleX(1);
         }
 
         .dark-theme .stat-card {
@@ -189,20 +209,28 @@ export default function OwnerDashboard() {
 
         .dark-theme .stat-card:hover {
           border-color: #475569;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
         }
 
         .stat-icon {
           font-size: 1.5rem;
           margin-bottom: 0.75rem;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 2.5rem;
+          height: 2.5rem;
+          background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(6, 182, 212, 0.1));
+          border-radius: 0.625rem;
         }
 
         .stat-number {
-          font-size: 2rem;
-          font-weight: 700;
+          font-size: 2.25rem;
+          font-weight: 800;
           color: #111827;
           margin-bottom: 0.25rem;
-          letter-spacing: -0.025em;
+          letter-spacing: -0.04em;
+          line-height: 1;
         }
 
         .dark-theme .stat-number {
