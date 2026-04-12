@@ -125,14 +125,14 @@ router.post('/send-otp', async (req, res) => {
       });
     }
 
-    // Generate OTP
+    // Generate OTP once — this same value will be stored AND emailed
     const emailOtp = generateOtp();
 
-    // Delete any previous OTP for this email+role combo
+    // Delete any previous OTP for this email+role combo FIRST
     await Otp.deleteMany({ email: email.toLowerCase(), role });
 
-    // Store OTP (expires in 5 minutes)
-    await Otp.create({
+    // Store OTP in DB (expires in 5 minutes)
+    const otpDoc = await Otp.create({
       email: email.toLowerCase(),
       phone: 'N/A',
       emailOtp,
@@ -141,10 +141,18 @@ router.post('/send-otp', async (req, res) => {
       expiresAt: new Date(Date.now() + 5 * 60 * 1000),
     });
 
-    // Send OTP via email
-    const emailSent = await sendOtpEmail(email, emailOtp);
+    // Use the value FROM the saved document (catches any pre-save transforms)
+    const storedOtp = otpDoc.emailOtp;
 
-    console.log(`🔑 OTP generated for ${email}: ${emailOtp}`);
+    // Log IMMEDIATELY after saving — this is the single source of truth
+    console.log(`🔑 OTP for ${email}: generated=${emailOtp}, stored=${storedOtp}`);
+
+    // Send the STORED OTP via email (not the generated one, in case they differ)
+    const emailSent = await sendOtpEmail(email, storedOtp);
+
+    if (emailSent) {
+      console.log(`📧 OTP email sent to ${email} (OTP: ${storedOtp})`);
+    }
 
     res.json({
       success: true,
