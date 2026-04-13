@@ -23,7 +23,7 @@ export default function StudentComplaintsPage() {
 
       if (bookingsResult.success) {
         const active = bookingsResult.bookings.find(
-          b => b.status === 'active' || b.status === 'approved'
+          b => ['active', 'approved', 'confirmed', 'pending_confirmation'].includes(b.status)
         );
         setActiveBooking(active || null);
       }

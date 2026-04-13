@@ -1,6 +1,7 @@
 import express from 'express';
 import Hostel from '../models/Hostel.js';
 import Room from '../models/Room.js';
+import Owner from '../models/Owner.js';
 import { authenticateOwner } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -414,6 +415,27 @@ router.get('/:id/rooms', async (req, res) => {
 // @access  Private (Owner only)
 router.post('/', authenticateOwner, async (req, res) => {
   try {
+    // ── CHECK 1: One hostel per owner ──────────────────────────
+    const existingHostel = await Hostel.findOne({ owner: req.user.id });
+    if (existingHostel) {
+      return res.status(400).json({
+        success: false,
+        message: 'You can only create one hostel. Please edit your existing hostel instead.',
+        hostelId: existingHostel._id
+      });
+    }
+
+    // ── CHECK 2: One-time payment required ──────────────────
+    const owner = await Owner.findById(req.user.id);
+
+    if (!owner.hasPaid) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please complete the one-time payment to list your hostel.',
+        requiresSubscription: true
+      });
+    }
+
     const {
       name,
       description,
@@ -555,7 +577,7 @@ router.post('/', authenticateOwner, async (req, res) => {
     }
 
     // Add hostel to owner's hostels array
-    const Owner = (await import('../models/Owner.js')).default;
+
     await Owner.findByIdAndUpdate(req.user.id, { 
       $push: { hostels: hostel._id }
     });
@@ -657,7 +679,7 @@ router.delete('/:id', authenticateOwner, async (req, res) => {
     const Booking = (await import('../models/Booking.js')).default;
     const activeBookings = await Booking.countDocuments({
       hostel: hostel._id,
-      status: { $in: ['pending', 'approved', 'active'] }
+      status: { $in: ['pending', 'approved', 'active', 'confirmed', 'pending_confirmation'] }
     });
 
     if (activeBookings > 0) {
@@ -671,7 +693,7 @@ router.delete('/:id', authenticateOwner, async (req, res) => {
     await Room.deleteMany({ hostelId: hostel._id });
 
     // Remove from owner's hostels array
-    const Owner = (await import('../models/Owner.js')).default;
+
     await Owner.findByIdAndUpdate(req.user.id, {
       $pull: { hostels: hostel._id }
     });

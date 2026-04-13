@@ -1,4 +1,5 @@
 import React from 'react'
+import { Toaster } from 'react-hot-toast'
 import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import Home from './pages/Home'
 import HostelInfo from './pages/HostelInfo'
@@ -11,6 +12,7 @@ import StudentProfile from './pages/StudentProfile'
 import StudentBookings from './pages/StudentBookings'
 import StudentComplaintsPage from './pages/StudentComplaintsPage'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminLogin from './pages/AdminLogin'
 import DoubleSharing from './pages/DoubleSharing'
 import TripleSharing from './pages/TripleSharing'
 import FourSharing from './pages/FourSharing'
@@ -21,6 +23,7 @@ import AddHostel from './pages/AddHostel'
 import ManageRooms from './pages/ManageRooms'
 import OwnerBookings from './pages/OwnerBookings'
 import OwnerComplaints from './pages/OwnerComplaints'
+import OwnerSubscription from './pages/OwnerSubscription'
 import ProtectedRoute from './components/ProtectedRoute'
 import ChatBot from './components/ChatBot'
 import Navbar from './components/Navbar'
@@ -37,6 +40,8 @@ function SmartHome() {
       return <Navigate to="/student/dashboard" replace />;
     } else if (userRole === 'owner') {
       return <Navigate to="/owner/dashboard" replace />;
+    } else if (userRole === 'admin') {
+      return <Navigate to="/admin/dashboard" replace />;
     }
   }
 
@@ -88,17 +93,30 @@ function NotFound() {
 const noNavbarRoutes = ['/login', '/register'];
 
 export default function App() {
-  const showNavbar = !noNavbarRoutes.some(
-    route => window.location.pathname.startsWith(route)
-  );
+  const isAdminPage = window.location.pathname.startsWith('/admin');
 
   return (
     <>
-      {/* Conditionally render Navbar */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            borderRadius: '12px',
+            padding: '14px 18px',
+            fontSize: '0.9rem',
+            fontWeight: 500,
+            fontFamily: 'inherit',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          },
+          success: { style: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }, iconTheme: { primary: '#22c55e', secondary: '#fff' } },
+          error: { style: { background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }, iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+        }}
+      />
       <AppContent />
       
-      {/* Global ChatBot - appears on all pages */}
-      <ChatBot />
+      {/* ChatBot — hidden on admin pages */}
+      {!isAdminPage && <ChatBot />}
     </>
   )
 }
@@ -129,6 +147,10 @@ function AppContent() {
         <Route path="/student/complaints" element={<StudentComplaintsPage />} />
       </Route>
 
+      {/* Admin Routes - separate auth, not using ProtectedRoute */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
       {/* Protected Admin/Owner Routes */}
       <Route element={<ProtectedRoute role="owner" />}>
         <Route path="/admin" element={<><Navbar /><AdminDashboard /></>} />
@@ -144,6 +166,7 @@ function AppContent() {
         <Route path="/owner/rooms/add" element={<ManageRooms />} />
         <Route path="/owner/bookings" element={<OwnerBookings />} />
         <Route path="/owner/complaints" element={<OwnerComplaints />} />
+        <Route path="/owner/subscription" element={<OwnerSubscription />} />
       </Route>
 
       {/* Redirects */}

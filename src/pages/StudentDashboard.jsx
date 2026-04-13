@@ -45,7 +45,7 @@ export default function StudentDashboard() {
     navigate(`/search?q=${encodeURIComponent(searchCity.trim())}`);
   }
 
-  const activeBooking = bookings.find(b => b.status === 'active' || b.status === 'approved');
+  const activeBooking = bookings.find(b => ['active', 'approved', 'confirmed', 'pending_confirmation'].includes(b.status));
   const pendingCount = bookings.filter(b => b.status === 'pending').length;
   const historyCount = bookings.filter(b => ['rejected', 'cancelled', 'completed'].includes(b.status)).length;
 

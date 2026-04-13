@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import DashboardLayout from '../components/DashboardLayout'
+import ConfirmModal from '../components/ConfirmModal'
 import {
   PlusIcon, EditIcon, TrashIcon, MapPinIcon, BedIcon, EyeIcon,
   CheckCircleIcon, PhoneIcon, UsersIcon, BuildingIcon
@@ -40,26 +42,35 @@ export default function OwnerHostels() {
     }
   }
 
-  const handleDelete = async (hostelId) => {
-    if (!window.confirm('Are you sure you want to delete this hostel?')) return
+  const [confirmAction, setConfirmAction] = useState(null);
 
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:5000/api/hostels/${hostelId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-
-      if (response.ok) {
-        alert('Hostel deleted successfully')
-        fetchHostels()
-      } else {
-        setError('Failed to delete hostel')
+  const handleDelete = (hostelId) => {
+    setConfirmAction({
+      title: 'Delete Hostel',
+      message: 'Are you sure you want to delete this hostel? This cannot be undone.',
+      confirmText: 'Delete',
+      confirmColor: '#ef4444',
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          const token = localStorage.getItem('token')
+          const response = await fetch(`http://localhost:5000/api/hostels/${hostelId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          if (response.ok) {
+            toast.success('Hostel deleted successfully')
+            fetchHostels()
+          } else {
+            toast.error('Failed to delete hostel')
+          }
+        } catch (err) {
+          toast.error('Failed to delete hostel')
+        }
       }
-    } catch (err) {
-      setError('Failed to delete hostel')
-    }
+    });
   }
+
 
   const roomTypes = ['single', 'double', 'triple', 'four']
   const roomLabels = { single: 'Single', double: 'Double', triple: 'Triple', four: 'Four-Person' }

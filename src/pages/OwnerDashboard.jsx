@@ -23,21 +23,35 @@ export default function OwnerDashboard() {
       try {
         const token = localStorage.getItem('token')
 
-        const [hostelResponse, complaintResponse] = await Promise.all([
+        const [hostelResponse, complaintResponse, bookingsResponse] = await Promise.all([
           fetch('http://localhost:5000/api/hostels/owner/my', {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
           fetch('http://localhost:5000/api/complaints/owner/stats', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch('http://localhost:5000/api/bookings/owner/all', {
             headers: { 'Authorization': `Bearer ${token}` }
           })
         ])
 
         const data = await hostelResponse.json()
         const complaintData = await complaintResponse.json()
+        const bookingsData = await bookingsResponse.json()
 
         let openComplaints = 0
         if (complaintData.success && complaintData.stats) {
           openComplaints = (complaintData.stats.open || 0) + (complaintData.stats.in_progress || 0)
+        }
+
+        let activeBookings = 0
+        let pendingRequests = 0
+        if (bookingsData.success && bookingsData.bookings) {
+          const allBookings = bookingsData.bookings
+          activeBookings = allBookings.filter(b => 
+            ['approved', 'active', 'pending_confirmation', 'confirmed'].includes(b.status)
+          ).length
+          pendingRequests = allBookings.filter(b => b.status === 'pending').length
         }
 
         if (hostelResponse.ok && data.success) {
@@ -58,12 +72,12 @@ export default function OwnerDashboard() {
             setStats({
               totalHostels: hostels.length,
               totalRooms,
-              activeBookings: 0,
-              pendingRequests: 0,
+              activeBookings,
+              pendingRequests,
               openComplaints
             })
           } else {
-            setStats(prev => ({ ...prev, openComplaints }))
+            setStats(prev => ({ ...prev, openComplaints, activeBookings, pendingRequests }))
           }
         }
       } catch (err) {
@@ -77,10 +91,14 @@ export default function OwnerDashboard() {
   }, [])
 
   const statCards = [
-    { label: 'Total Hostels', value: stats.totalHostels, icon: BuildingIcon, color: '--primary' },
-    { label: 'Total Rooms', value: stats.totalRooms, icon: BedIcon, color: '--accent' },
-    { label: 'Active Bookings', value: stats.activeBookings, icon: ClipboardIcon, color: '--success' },
-    { label: 'Pending Requests', value: stats.pendingRequests, icon: HourglassIcon, color: '--warning' },
+    { label: 'Total Hostels', value: stats.totalHostels, icon: BuildingIcon, color: '--primary',
+      onClick: () => navigate('/owner/hostels') },
+    { label: 'Total Rooms', value: stats.totalRooms, icon: BedIcon, color: '--accent',
+      onClick: () => navigate('/owner/rooms') },
+    { label: 'Active Bookings', value: stats.activeBookings, icon: ClipboardIcon, color: '--success',
+      onClick: () => navigate('/owner/bookings') },
+    { label: 'Pending Requests', value: stats.pendingRequests, icon: HourglassIcon, color: '--warning',
+      onClick: () => navigate('/owner/bookings'), highlight: stats.pendingRequests > 0 },
     { label: 'Open Complaints', value: stats.openComplaints, icon: TicketIcon, color: '--danger', 
       onClick: () => navigate('/owner/complaints'), highlight: stats.openComplaints > 0 },
   ]
@@ -108,7 +126,7 @@ export default function OwnerDashboard() {
           <div
             key={label}
             className="stat-card"
-            style={{ cursor: onClick ? 'pointer' : 'default' }}
+            style={{ cursor: 'pointer' }}
             onClick={onClick}
           >
             <div

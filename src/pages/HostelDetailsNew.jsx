@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { hostelsAPI, bookingsAPI } from '../services/api';
 
@@ -41,7 +42,7 @@ export default function HostelDetails() {
     }
 
     if (userRole !== 'student') {
-      alert('Only students can book rooms');
+      toast.error('Only students can book rooms');
       return;
     }
 
@@ -59,10 +60,10 @@ export default function HostelDetails() {
     setBookingRoomType('');
 
     if (result.success) {
-      alert('Booking request submitted! The hostel owner will review your request.');
+      toast.success('Payment successful! Booking confirmed.');
       navigate('/student/dashboard');
     } else {
-      alert(result.message || 'Failed to submit booking request');
+      toast.error(result.message || 'Payment failed. Please try again.');
     }
   }
 
@@ -445,7 +446,7 @@ export default function HostelDetails() {
                     onClick={() => handleBookRoom('single')}
                     disabled={isBooking && bookingRoomType === 'single'}
                   >
-                    {isBooking && bookingRoomType === 'single' ? 'Booking...' : 'Book Now'}
+                    {isBooking && bookingRoomType === 'single' ? 'Processing...' : 'Pay & Book'}
                   </button>
                 </div>
               )}
@@ -464,7 +465,7 @@ export default function HostelDetails() {
                     onClick={() => handleBookRoom('double')}
                     disabled={isBooking && bookingRoomType === 'double'}
                   >
-                    {isBooking && bookingRoomType === 'double' ? 'Booking...' : 'Book Now'}
+                    {isBooking && bookingRoomType === 'double' ? 'Processing...' : 'Pay & Book'}
                   </button>
                 </div>
               )}
@@ -483,7 +484,7 @@ export default function HostelDetails() {
                     onClick={() => handleBookRoom('triple')}
                     disabled={isBooking && bookingRoomType === 'triple'}
                   >
-                    {isBooking && bookingRoomType === 'triple' ? 'Booking...' : 'Book Now'}
+                    {isBooking && bookingRoomType === 'triple' ? 'Processing...' : 'Pay & Book'}
                   </button>
                 </div>
               )}
@@ -502,7 +503,7 @@ export default function HostelDetails() {
                     onClick={() => handleBookRoom('four')}
                     disabled={isBooking && bookingRoomType === 'four'}
                   >
-                    {isBooking && bookingRoomType === 'four' ? 'Booking...' : 'Book Now'}
+                    {isBooking && bookingRoomType === 'four' ? 'Processing...' : 'Pay & Book'}
                   </button>
                 </div>
               )}

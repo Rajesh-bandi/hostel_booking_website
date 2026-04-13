@@ -28,11 +28,11 @@ router.post('/', authenticateStudent, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    // Check booking status - must be approved or active
-    if (!['approved', 'active', 'completed'].includes(booking.status)) {
+    // Check booking status - must have an active or confirmed booking
+    if (!['approved', 'active', 'completed', 'confirmed', 'pending_confirmation'].includes(booking.status)) {
       return res.status(400).json({ 
         success: false, 
-        message: 'You can only review after your booking is approved' 
+        message: 'You can only review after your booking is confirmed' 
       });
     }
 

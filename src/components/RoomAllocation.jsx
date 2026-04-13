@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { roomsAPI, studentsAPI } from '../services/api'
+import ConfirmModal from './ConfirmModal'
 
 /**
  * Reusable Room Allocation component
@@ -17,6 +19,7 @@ export default function RoomAllocation({ title, roomType, capacity }) {
   const [current, setCurrent] = useState(null)
   const [photoData, setPhotoData] = useState(null)
   const [night, setNight] = useState(() => localStorage.getItem('nightMode') === 'true')
+  const [confirmAction, setConfirmAction] = useState(null)
 
   // Fetch rooms from MongoDB
   useEffect(() => {
@@ -59,12 +62,12 @@ export default function RoomAllocation({ title, roomType, capacity }) {
     
     // Only require essential fields
     if (!v.name || !v.id || !v.phone) {
-      alert('Please fill required fields: Name, Student ID, and Phone')
+      toast.error('Please fill required fields: Name, Student ID, and Phone')
       return
     }
 
     if (current.occupants.length >= current.capacity) {
-      alert(`Room is at full capacity (${current.capacity})`)
+      toast.error(`Room is at full capacity (${current.capacity})`)
       return
     }
 
@@ -90,12 +93,12 @@ export default function RoomAllocation({ title, roomType, capacity }) {
     console.log('API response:', result);
     
     if (result.success) {
-      alert(`Allocated ${studentData.name} to Room ${current.number}`)
+      toast.success(`Allocated ${studentData.name} to Room ${current.number}`)
       fetchRooms() // Refresh rooms
       setCurrent(null) // Close modal
       setPhotoData(null)
     } else {
-      alert(result.message || 'Failed to allocate student')
+      toast.error(result.message || 'Failed to allocate student')
     }
   }
 
@@ -105,46 +108,51 @@ export default function RoomAllocation({ title, roomType, capacity }) {
     const result = await studentsAPI.remove(studentId)
     
     if (result.success) {
-      alert('Student removed successfully')
+      toast.success('Student removed successfully')
       fetchRooms() // Refresh rooms
       setCurrent(null)
     } else {
-      alert(result.message || 'Failed to remove student')
+      toast.error(result.message || 'Failed to remove student')
     }
   }
 
-  async function deallocateAll() {
+  function deallocateAll() {
     if (!current) return
-    if (!confirm(`Are you sure you want to deallocate all ${current.occupants.length} students from Room ${current.number}?`)) return
-    
-    // Remove all students in this room
-    for (const occupant of current.occupants) {
-      await studentsAPI.remove(occupant._id)
-    }
-    
-    alert('All students deallocated successfully')
-    fetchRooms() // Refresh rooms
-    setCurrent(null)
+    setConfirmAction({
+      title: 'Deallocate All Students',
+      message: `Are you sure you want to deallocate all ${current.occupants.length} students from Room ${current.number}?`,
+      confirmText: 'Deallocate All',
+      confirmColor: '#ef4444',
+      onConfirm: async () => {
+        setConfirmAction(null);
+        for (const occupant of current.occupants) {
+          await studentsAPI.remove(occupant._id)
+        }
+        toast.success('All students deallocated successfully')
+        fetchRooms()
+        setCurrent(null)
+      }
+    });
   }
 
   async function changeStatus(newStatus) {
     if (!current) return
     
     if (newStatus === 'available' && current.occupants.length > 0) {
-      return alert('Cannot set to Available with occupants')
+      return toast.error('Cannot set to Available with occupants')
     }
     if (newStatus === 'occupied' && current.occupants.length === 0) {
-      return alert('Cannot set to Occupied without occupants')
+      return toast.error('Cannot set to Occupied without occupants')
     }
     
     const result = await roomsAPI.updateStatus(current._id, newStatus)
     
     if (result.success) {
-      alert('Room status updated successfully')
+      toast.success('Room status updated successfully')
       fetchRooms() // Refresh rooms
       setCurrent(null)
     } else {
-      alert(result.message || 'Failed to update room status')
+      toast.error(result.message || 'Failed to update room status')
     }
   }
 
@@ -725,7 +733,7 @@ export default function RoomAllocation({ title, roomType, capacity }) {
                     
                     // Check file size (2MB limit)
                     if(f.size > 2 * 1024 * 1024) {
-                      alert('Image size should be less than 2MB');
+                      toast.error('Image size should be less than 2MB');
                       e.target.value = '';
                       return;
                     }

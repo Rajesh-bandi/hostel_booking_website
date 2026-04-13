@@ -639,6 +639,63 @@ export const bookingsAPI = {
       return { success: false, message: 'Network error' };
     }
   },
+
+  // Request refund (student only)
+  refund: async (bookingId, reason) => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_URL}/bookings/${bookingId}/refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason }),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Refund error:', error);
+      return { success: false, message: 'Network error' };
+    }
+  },
+
+  // Confirm booking with verification code (owner only)
+  confirmCode: async (code) => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_URL}/bookings/confirm-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ code }),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Confirm code error:', error);
+      return { success: false, message: 'Network error' };
+    }
+  },
+
+  // Switch booking to different hostel (student only)
+  switchBooking: async (bookingId, data) => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_URL}/bookings/${bookingId}/switch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Switch booking error:', error);
+      return { success: false, message: 'Network error' };
+    }
+  },
 };
 
 // Reviews API
@@ -739,6 +796,239 @@ export const reviewsAPI = {
       return await response.json();
     } catch (error) {
       console.error('Get complaints error:', error);
+      return { success: false, message: 'Network error' };
+    }
+  },
+};
+
+// Payments API (Razorpay escrow)
+export const paymentsAPI = {
+  getRazorpayKey: async () => {
+    try {
+      const response = await fetch(`${API_URL}/payments/razorpay-key`);
+      return await response.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  createOrder: async (bookingId) => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_URL}/payments/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ bookingId }),
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  verifyPayment: async (data) => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_URL}/payments/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(data),
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  getStatus: async (bookingId) => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_URL}/payments/status/${bookingId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  getWallet: async () => {
+    try {
+      const token = getToken();
+      const response = await fetch(`${API_URL}/payments/wallet`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      return await response.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+};
+
+// Admin API
+export const adminAPI = {
+  login: async (email, password) => {
+    try {
+      const response = await fetch(`${API_URL}/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        localStorage.setItem('userRole', 'admin');
+      }
+      return data;
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  getDashboard: async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/admin/dashboard`, { headers: { 'Authorization': `Bearer ${token}` } });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  getPayments: async (status = '') => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const q = status ? `?status=${status}` : '';
+      const res = await fetch(`${API_URL}/admin/payments${q}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  releasePayment: async (paymentId, notes = '') => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/admin/payments/${paymentId}/release`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ notes }),
+      });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  getBookings: async (status = '') => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const q = status ? `?status=${status}` : '';
+      const res = await fetch(`${API_URL}/admin/bookings${q}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  getRefunds: async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/admin/refunds`, { headers: { 'Authorization': `Bearer ${token}` } });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  getStudents: async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/admin/users/students`, { headers: { 'Authorization': `Bearer ${token}` } });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  getOwners: async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/admin/users/owners`, { headers: { 'Authorization': `Bearer ${token}` } });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  blockUser: async (userId, role, block) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/admin/users/${userId}/block`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ role, block }),
+      });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  getHostels: async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/admin/hostels`, { headers: { 'Authorization': `Bearer ${token}` } });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  toggleHostel: async (hostelId) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/admin/hostels/${hostelId}/toggle`, {
+        method: 'PUT', headers: { 'Authorization': `Bearer ${token}` },
+      });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+  getTransactions: async (page = 1) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_URL}/admin/transactions?page=${page}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+};
+
+// Subscription API (One-Time Payment)
+export const subscriptionAPI = {
+  getPlan: async () => {
+    try {
+      const res = await fetch(`${API_URL}/subscription/plans`);
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+
+  getStatus: async () => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_URL}/subscription/status`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: 'Network error' };
+    }
+  },
+
+  pay: async () => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_URL}/subscription/pay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      return await res.json();
+    } catch (error) {
       return { success: false, message: 'Network error' };
     }
   },

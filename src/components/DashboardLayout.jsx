@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboardIcon, BuildingIcon, BedIcon, ClipboardIcon, TicketIcon,
   HomeIcon, SunIcon, MoonIcon, LogOutIcon, ChevronLeftIcon, ChevronRightIcon,
-  MenuIcon, XIcon, UserIcon
+  MenuIcon, XIcon, UserIcon, CreditCardIcon
 } from './Icons';
 
 export default function DashboardLayout({ children, role = 'owner' }) {
@@ -59,6 +59,7 @@ export default function DashboardLayout({ children, role = 'owner' }) {
     { to: '/owner/rooms', label: 'Rooms', icon: BedIcon },
     { to: '/owner/bookings', label: 'Bookings', icon: ClipboardIcon },
     { to: '/owner/complaints', label: 'Complaints', icon: TicketIcon },
+    { to: '/owner/subscription', label: 'Listing Payment', icon: CreditCardIcon },
   ];
 
   const studentLinks = [

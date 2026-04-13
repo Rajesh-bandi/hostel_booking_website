@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import DashboardLayout from '../components/DashboardLayout'
+import ConfirmModal from '../components/ConfirmModal'
 import {
   ClipboardIcon, CheckCircleIcon, XCircleIcon, HourglassIcon,
   LogOutIcon, HomeIcon, UserIcon, MailIcon, PhoneIcon, CalendarIcon, BedIcon
@@ -10,6 +12,9 @@ export default function OwnerBookings() {
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [verifyCode, setVerifyCode] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [verifyMessage, setVerifyMessage] = useState({ type: '', text: '' })
 
   useEffect(() => {
     fetchBookings()
@@ -77,37 +82,79 @@ export default function OwnerBookings() {
       setError('Failed to reject booking')
     }
   }
+  const [confirmAction, setConfirmAction] = useState(null);
 
-  const handleCheckout = async (bookingId) => {
-    if (!window.confirm('Are you sure you want to checkout this student?')) return
+  const handleCheckout = (bookingId) => {
+    setConfirmAction({
+      title: 'Checkout Student',
+      message: 'Are you sure you want to checkout this student?',
+      confirmText: 'Checkout',
+      confirmColor: '#f59e0b',
+      onConfirm: async () => {
+        setConfirmAction(null);
+        try {
+          const token = localStorage.getItem('token')
+          const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}/checkout`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          if (response.ok) {
+            toast.success('Student checked out');
+            fetchBookings()
+          } else {
+            const data = await response.json()
+            toast.error(data.message || 'Failed to checkout')
+          }
+        } catch (err) {
+          toast.error('Failed to checkout')
+        }
+      }
+    });
+  }
+
+  const handleConfirmCode = async () => {
+    if (!verifyCode || verifyCode.trim().length !== 6) {
+      setVerifyMessage({ type: 'error', text: 'Please enter a valid 6-digit code' })
+      return
+    }
+    setVerifying(true)
+    setVerifyMessage({ type: '', text: '' })
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:5000/api/bookings/${bookingId}/checkout`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch('http://localhost:5000/api/bookings/confirm-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ code: verifyCode.trim() })
       })
-      if (response.ok) {
+      const data = await response.json()
+      if (data.success) {
+        setVerifyMessage({ type: 'success', text: data.message })
+        setVerifyCode('')
         fetchBookings()
       } else {
-        const data = await response.json()
-        setError(data.message || 'Failed to checkout')
+        setVerifyMessage({ type: 'error', text: data.message || 'Invalid code' })
       }
     } catch (err) {
-      setError('Failed to checkout')
+      setVerifyMessage({ type: 'error', text: 'Failed to verify code' })
     }
+    setVerifying(false)
   }
 
   const filteredBookings = filter === 'all'
     ? bookings
-    : filter === 'approved'
-    ? bookings.filter(b => b.status === 'approved' || b.status === 'active')
+    : filter === 'paid'
+    ? bookings.filter(b => b.status === 'pending_confirmation')
+    : filter === 'confirmed'
+    ? bookings.filter(b => b.status === 'confirmed' || b.status === 'approved' || b.status === 'active')
     : bookings.filter(b => b.status === filter)
 
   const filters = [
     { key: 'all', label: 'All', count: bookings.length },
-    { key: 'pending', label: 'Pending', count: bookings.filter(b => b.status === 'pending').length },
-    { key: 'approved', label: 'Approved', count: bookings.filter(b => b.status === 'approved' || b.status === 'active').length },
+    { key: 'paid', label: 'Paid (Pending)', count: bookings.filter(b => b.status === 'pending_confirmation').length },
+    { key: 'confirmed', label: 'Confirmed', count: bookings.filter(b => ['confirmed', 'approved', 'active'].includes(b.status)).length },
+    { key: 'rejected', label: 'Rejected', count: bookings.filter(b => b.status === 'rejected').length },
     { key: 'completed', label: 'Completed', count: bookings.filter(b => b.status === 'completed').length },
+    { key: 'refunded', label: 'Refunded', count: bookings.filter(b => b.status === 'refunded').length },
   ]
 
   const statusConfig = {
@@ -117,6 +164,10 @@ export default function OwnerBookings() {
     rejected: { badge: 'badge-danger', label: 'Rejected', icon: XCircleIcon },
     cancelled: { badge: 'badge-neutral', label: 'Cancelled', icon: XCircleIcon },
     completed: { badge: 'badge-success', label: 'Completed', icon: CheckCircleIcon },
+    pending_confirmation: { badge: 'badge-warning', label: 'Paid · Pending', icon: HourglassIcon },
+    confirmed: { badge: 'badge-success', label: 'Confirmed', icon: CheckCircleIcon },
+    refunded: { badge: 'badge-danger', label: 'Refunded', icon: XCircleIcon },
+    switched: { badge: 'badge-neutral', label: 'Switched', icon: XCircleIcon },
   }
 
   return (
@@ -134,6 +185,61 @@ export default function OwnerBookings() {
         <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-base)' }}>
           Manage and track all student booking requests
         </p>
+      </div>
+
+      {/* Verification Code Entry */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(79,70,229,0.06), rgba(139,92,246,0.04))',
+        border: '2px solid rgba(79,70,229,0.15)',
+        borderRadius: 'var(--radius-xl)',
+        padding: 'var(--space-6)',
+        marginBottom: 'var(--space-6)',
+      }}>
+        <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>
+          🔑 Enter Verification Code
+        </h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)' }}>
+          Enter the 6-digit code from a student to confirm their booking and release payment.
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Enter 6-digit code"
+            value={verifyCode}
+            onChange={e => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            maxLength={6}
+            style={{
+              width: 200,
+              fontFamily: 'monospace',
+              fontSize: 'var(--text-lg)',
+              letterSpacing: '0.2em',
+              textAlign: 'center',
+              fontWeight: 700,
+            }}
+          />
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={handleConfirmCode}
+            disabled={verifying || verifyCode.length !== 6}
+          >
+            {verifying ? '⏳ Verifying...' : '✅ Confirm Booking'}
+          </button>
+        </div>
+        {verifyMessage.text && (
+          <div style={{
+            marginTop: 'var(--space-3)',
+            padding: 'var(--space-3) var(--space-4)',
+            borderRadius: 'var(--radius-md)',
+            fontSize: 'var(--text-sm)',
+            fontWeight: 500,
+            background: verifyMessage.type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+            color: verifyMessage.type === 'success' ? '#16a34a' : '#dc2626',
+            border: `1px solid ${verifyMessage.type === 'success' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+          }}>
+            {verifyMessage.text}
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -273,29 +379,24 @@ export default function OwnerBookings() {
                   }}>
                     {booking.status === 'pending' && (
                       <>
-                        <button
-                          className="btn btn-success btn-sm"
-                          onClick={() => handleApprove(booking._id)}
-                        >
-                          <CheckCircleIcon size={14} />
-                          Approve
+                        <button className="btn btn-success btn-sm" onClick={() => handleApprove(booking._id)}>
+                          <CheckCircleIcon size={14} /> Approve
                         </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => handleReject(booking._id)}
-                        >
-                          <XCircleIcon size={14} />
-                          Reject
+                        <button className="btn btn-danger btn-sm" onClick={() => handleReject(booking._id)}>
+                          <XCircleIcon size={14} /> Reject
                         </button>
                       </>
                     )}
-                    {(booking.status === 'approved' || booking.status === 'active') && (
-                      <button
-                        className="btn btn-outline btn-sm"
-                        onClick={() => handleCheckout(booking._id)}
-                      >
-                        <LogOutIcon size={14} />
-                        Checkout
+                    {booking.status === 'pending_confirmation' && (
+                      <>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleReject(booking._id)}>
+                          <XCircleIcon size={14} /> Reject & Refund
+                        </button>
+                      </>
+                    )}
+                    {(booking.status === 'approved' || booking.status === 'active' || booking.status === 'confirmed') && (
+                      <button className="btn btn-outline btn-sm" onClick={() => handleCheckout(booking._id)}>
+                        <LogOutIcon size={14} /> Checkout
                       </button>
                     )}
                   </div>

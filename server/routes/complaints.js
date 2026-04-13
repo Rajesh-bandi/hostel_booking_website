@@ -40,7 +40,7 @@ router.post('/', auth, async (req, res) => {
     const activeBooking = await Booking.findOne({
       student: req.userId,
       hostel: hostelId,
-      status: { $in: ['approved', 'active', 'checked_in'] }
+      status: { $in: ['approved', 'active', 'checked_in', 'confirmed', 'pending_confirmation'] }
     }).populate('hostel', 'owner');
 
     if (!activeBooking) {

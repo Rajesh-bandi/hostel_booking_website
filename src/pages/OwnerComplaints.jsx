@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'
+import toast from 'react-hot-toast';
 import DashboardLayout from '../components/DashboardLayout';
 import { TicketIcon, CheckCircleIcon } from '../components/Icons';
 
@@ -100,7 +101,7 @@ export default function OwnerComplaints() {
         setSelectedComplaint({ ...selectedComplaint, ownerResponse: responseText, status: 'in_progress' });
       }
     } catch (error) {
-      alert('Failed to send response');
+      toast.error('Failed to send response');
     } finally {
       setSubmitting(false);
     }
@@ -128,7 +129,7 @@ export default function OwnerComplaints() {
         fetchData();
       }
     } catch (error) {
-      alert('Failed to resolve complaint');
+      toast.error('Failed to resolve complaint');
     } finally {
       setSubmitting(false);
     }

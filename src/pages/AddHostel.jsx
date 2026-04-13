@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import DashboardLayout from '../components/DashboardLayout'
 
 export default function AddHostel() {
@@ -404,9 +405,21 @@ export default function AddHostel() {
       console.log('Response:', data)
 
       if (response.ok && (data.success || data.hostel)) {
-        alert(isEditMode ? 'Hostel updated successfully!' : 'Hostel created successfully!')
+        toast.success(isEditMode ? 'Hostel updated successfully!' : 'Hostel created successfully!')
         navigate('/owner/hostels')
       } else {
+        // Handle subscription required error
+        if (data.requiresSubscription) {
+          toast.error('Please complete the one-time payment to list your hostel')
+          navigate('/owner/subscription')
+          return
+        }
+        // Handle one-hostel limit error
+        if (data.hostelId) {
+          toast.error('You already have a hostel')
+          navigate(`/owner/hostels/${data.hostelId}/edit`)
+          return
+        }
         setError(data.message || 'Failed to save hostel')
       }
     } catch (err) {

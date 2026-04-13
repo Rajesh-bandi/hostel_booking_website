@@ -99,7 +99,7 @@ router.post('/query', optionalAuth, async (req, res) => {
         } else {
           const activeBooking = await Booking.findOne({
             student: userId,
-            status: { $in: ['approved', 'checked_in'] }
+            status: { $in: ['approved', 'checked_in', 'confirmed', 'pending_confirmation'] }
           }).populate('room', 'price');
 
           if (!activeBooking) {

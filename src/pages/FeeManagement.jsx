@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { studentsAPI, feesAPI } from '../services/api'
 
@@ -66,7 +67,7 @@ export default function FeeManagement(){
 
   async function recordPayment() {
     if (!selectedStudent || !paymentForm.amount || paymentForm.amount <= 0) {
-      alert('Please enter a valid amount')
+      toast.error('Please enter a valid amount')
       return
     }
 
@@ -81,11 +82,11 @@ export default function FeeManagement(){
     const result = await feesAPI.addPayment(paymentData)
     
     if (result.success) {
-      alert('Payment recorded successfully!')
+      toast.success('Payment recorded successfully!')
       closeModals()
       fetchStudents()
     } else {
-      alert(result.message || 'Failed to record payment')
+      toast.error(result.message || 'Failed to record payment')
     }
   }
 

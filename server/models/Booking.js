@@ -51,8 +51,42 @@ const BookingSchema = new mongoose.Schema({
   // Status tracking
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected', 'active', 'cancelled', 'completed'],
+    enum: ['pending', 'approved', 'rejected', 'active', 'cancelled', 'completed',
+           'pending_confirmation', 'confirmed', 'refunded', 'switched'],
     default: 'pending'
+  },
+
+  // Escrow verification
+  verificationCode: {
+    type: String,
+  },
+  verificationCodeExpiry: {
+    type: Date,
+  },
+  isPaid: {
+    type: Boolean,
+    default: false
+  },
+
+  // Refund tracking
+  refundReason: {
+    type: String,
+    trim: true
+  },
+  refundStatus: {
+    type: String,
+    enum: ['none', 'requested', 'approved', 'rejected'],
+    default: 'none'
+  },
+
+  // Switch tracking
+  switchedFrom: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Booking'
+  },
+  switchedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Booking'
   },
 
   // Dates

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authAPI, bookingsAPI, reviewsAPI } from '../services/api';
+import toast from 'react-hot-toast';
+import { authAPI, bookingsAPI, reviewsAPI, paymentsAPI } from '../services/api';
 import DashboardLayout from '../components/DashboardLayout';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   HomeIcon, ClipboardIcon, HourglassIcon, CheckCircleIcon,
   XCircleIcon, BuildingIcon, SearchIcon
@@ -13,6 +15,10 @@ export default function StudentBookings() {
   const [isLoading, setIsLoading] = useState(true);
   const [myReviews, setMyReviews] = useState([]);
   const [activeTab, setActiveTab] = useState('active');
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [payingBookingId, setPayingBookingId] = useState(null);
+  const [showRefundModal, setShowRefundModal] = useState(null);
+  const [refundReason, setRefundReason] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -20,10 +26,11 @@ export default function StudentBookings() {
 
   async function fetchData() {
     setIsLoading(true);
-    const [userResult, bookingsResult, reviewsResult] = await Promise.all([
+    const [userResult, bookingsResult, reviewsResult, walletResult] = await Promise.all([
       authAPI.getMe(),
       bookingsAPI.getMyBookings(),
-      reviewsAPI.getMyReviews()
+      reviewsAPI.getMyReviews(),
+      paymentsAPI.getWallet()
     ]);
 
     if (!userResult.success) {
@@ -32,14 +39,25 @@ export default function StudentBookings() {
     }
     if (bookingsResult.success) setBookings(bookingsResult.bookings);
     if (reviewsResult.success) setMyReviews(reviewsResult.reviews || []);
+    if (walletResult.success) setWalletBalance(walletResult.wallet?.balance || 0);
     setIsLoading(false);
   }
 
+  const [confirmAction, setConfirmAction] = useState(null);
+
   async function handleCancelBooking(bookingId) {
-    if (!window.confirm('Are you sure you want to cancel this booking?')) return;
-    const result = await bookingsAPI.cancel(bookingId);
-    if (result.success) fetchData();
-    else alert(result.message || 'Failed to cancel booking');
+    setConfirmAction({
+      title: 'Cancel Booking',
+      message: 'Are you sure you want to cancel this booking?',
+      confirmText: 'Cancel Booking',
+      confirmColor: '#ef4444',
+      onConfirm: async () => {
+        setConfirmAction(null);
+        const result = await bookingsAPI.cancel(bookingId);
+        if (result.success) { toast.success('Booking cancelled'); fetchData(); }
+        else toast.error(result.message || 'Failed to cancel booking');
+      }
+    });
   }
 
   function hasReviewedBooking(bookingId) {
@@ -55,16 +73,113 @@ export default function StudentBookings() {
       isComplaint
     });
     if (result.success) {
-      alert('Review submitted successfully!');
+      toast.success('Review submitted successfully!');
       fetchData();
     } else {
-      alert(result.message || 'Failed to submit review');
+      toast.error(result.message || 'Failed to submit review');
     }
   }
 
-  const activeBooking = bookings.find(b => b.status === 'active' || b.status === 'approved');
+  // ── Payment Flow ────────────────────────────────────────────
+  async function handlePayBooking(bookingId) {
+    setPayingBookingId(bookingId);
+    try {
+      const orderResult = await paymentsAPI.createOrder(bookingId);
+      if (!orderResult.success) {
+        toast.error(orderResult.message || 'Failed to create payment order');
+        setPayingBookingId(null);
+        return;
+      }
+
+      // If simulated mode (no Razorpay keys configured), auto-verify
+      if (orderResult.simulated) {
+        const verifyResult = await paymentsAPI.verifyPayment({
+          razorpay_order_id: orderResult.order.id,
+          razorpay_payment_id: 'SIM_PAY_' + Date.now(),
+          razorpay_signature: 'SIMULATED',
+          bookingId,
+        });
+        setPayingBookingId(null);
+        if (verifyResult.success) {
+          toast.success(`Payment successful! Your verification code: ${verifyResult.verificationCode}`, { duration: 8000 });
+          fetchData();
+        } else {
+          toast.error(verifyResult.message || 'Payment verification failed');
+        }
+        return;
+      }
+
+      // Wallet-only payment
+      if (orderResult.walletPayment) {
+        toast.success(`Wallet payment successful! Code: ${orderResult.verificationCode}`, { duration: 8000 });
+        setPayingBookingId(null);
+        fetchData();
+        return;
+      }
+
+      // Load Razorpay checkout
+      const keyResult = await paymentsAPI.getRazorpayKey();
+      const options = {
+        key: keyResult.keyId,
+        amount: orderResult.order.amount,
+        currency: orderResult.order.currency,
+        name: 'HostelHub',
+        description: `Booking at ${orderResult.hostelName}`,
+        order_id: orderResult.order.id,
+        handler: async function (response) {
+          const verifyResult = await paymentsAPI.verifyPayment({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            bookingId,
+          });
+          setPayingBookingId(null);
+          if (verifyResult.success) {
+            toast.success(`Payment successful! Your verification code: ${verifyResult.verificationCode}`, { duration: 8000 });
+            fetchData();
+          } else {
+            toast.error(verifyResult.message || 'Payment verification failed');
+          }
+        },
+        modal: { ondismiss: () => setPayingBookingId(null) },
+        theme: { color: '#4f46e5' },
+      };
+
+      // Load Razorpay script dynamically
+      if (!window.Razorpay) {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => { new window.Razorpay(options).open(); };
+        document.body.appendChild(script);
+      } else {
+        new window.Razorpay(options).open();
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      toast.error('Payment failed. Please try again.');
+      setPayingBookingId(null);
+    }
+  }
+
+  async function handleRefund(bookingId) {
+    if (!refundReason || refundReason.trim().length < 5) {
+      toast.error('Please provide a reason (minimum 5 characters)');
+      return;
+    }
+    const result = await bookingsAPI.refund(bookingId, refundReason);
+    if (result.success) {
+      toast.success(`Refund processed! New wallet balance: ₹${result.walletBalance}`);
+      setShowRefundModal(null);
+      setRefundReason('');
+      fetchData();
+    } else {
+      toast.error(result.message || 'Refund failed');
+    }
+  }
+
+  const activeBooking = bookings.find(b => ['active', 'approved', 'pending_confirmation', 'confirmed'].includes(b.status));
   const pendingBookings = bookings.filter(b => b.status === 'pending');
-  const pastBookings = bookings.filter(b => ['rejected', 'cancelled', 'completed'].includes(b.status));
+  const pastBookings = bookings.filter(b => ['rejected', 'cancelled', 'completed', 'refunded', 'switched'].includes(b.status));
 
   const tabs = [
     { id: 'active', label: 'Current Stay', count: activeBooking ? 1 : 0, icon: HomeIcon },
@@ -271,17 +386,81 @@ export default function StudentBookings() {
           background: rgba(239, 68, 68, 0.15);
           color: #f87171;
         }
-        .status-cancelled {
+        .status-cancelled, .status-switched {
           background: var(--bg-tertiary);
           color: var(--text-secondary);
         }
-        .status-completed {
+        .status-completed, .status-confirmed {
           background: rgba(16, 185, 129, 0.1);
           color: #059669;
         }
-        body.dark-mode .status-completed {
+        body.dark-mode .status-completed, body.dark-mode .status-confirmed {
           background: rgba(16, 185, 129, 0.15);
           color: #34d399;
+        }
+        .status-pending_confirmation {
+          background: rgba(139, 92, 246, 0.1);
+          color: #7c3aed;
+        }
+        body.dark-mode .status-pending_confirmation {
+          background: rgba(139, 92, 246, 0.15);
+          color: #a78bfa;
+        }
+        .status-refunded {
+          background: rgba(239, 68, 68, 0.1);
+          color: #dc2626;
+        }
+        body.dark-mode .status-refunded {
+          background: rgba(239, 68, 68, 0.15);
+          color: #f87171;
+        }
+        .verification-code-box {
+          background: linear-gradient(135deg, rgba(79,70,229,0.08), rgba(139,92,246,0.06));
+          border: 2px dashed rgba(79,70,229,0.3);
+          border-radius: var(--radius-lg);
+          padding: var(--space-5);
+          margin-top: var(--space-5);
+          text-align: center;
+        }
+        .verification-code {
+          font-family: 'SFMono-Regular', Consolas, monospace;
+          font-size: 2rem;
+          font-weight: 800;
+          letter-spacing: 0.3em;
+          color: var(--primary);
+          margin: var(--space-3) 0;
+        }
+        .wallet-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-2) var(--space-4);
+          background: rgba(34,197,94,0.1);
+          border: 1px solid rgba(34,197,94,0.2);
+          border-radius: var(--radius-full);
+          font-size: var(--text-sm);
+          font-weight: 600;
+          color: #16a34a;
+        }
+        body.dark-mode .wallet-badge {
+          color: #4ade80;
+          background: rgba(34,197,94,0.15);
+        }
+        .refund-modal-backdrop {
+          position: fixed; inset: 0; z-index: 1000;
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(4px);
+          display: flex; align-items: center; justify-content: center;
+          padding: var(--space-4);
+        }
+        .refund-modal {
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-xl);
+          padding: var(--space-8);
+          max-width: 480px;
+          width: 100%;
+          box-shadow: var(--shadow-xl);
         }
         .history-item {
           display: flex;
@@ -317,8 +496,15 @@ export default function StudentBookings() {
 
       <div className="bookings-container">
         <div className="bookings-header">
-          <h1 className="bookings-title">My Bookings</h1>
-          <p className="bookings-subtitle">Manage your hostel bookings and requests</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+            <div>
+              <h1 className="bookings-title">My Bookings</h1>
+              <p className="bookings-subtitle">Manage your hostel bookings and requests</p>
+            </div>
+            <div className="wallet-badge">
+              💰 Wallet: ₹{walletBalance.toLocaleString()}
+            </div>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -394,17 +580,63 @@ export default function StudentBookings() {
                     </div>
                   </div>
                 </div>
+                {/* Verification Code Display */}
+                {activeBooking.status === 'pending_confirmation' && activeBooking.verificationCode && (
+                  <div className="verification-code-box">
+                    <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      🔑 Verification Code
+                    </div>
+                    <div className="verification-code">{activeBooking.verificationCode}</div>
+                    <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', maxWidth: 360, margin: '0 auto' }}>
+                      Share this code with the hostel owner after inspecting the hostel to confirm your stay.
+                    </p>
+                    <button
+                      style={{ marginTop: 'var(--space-3)', cursor: 'pointer' }}
+                      className="btn btn-outline btn-sm"
+                      onClick={() => { navigator.clipboard.writeText(activeBooking.verificationCode); toast.success('Code copied!'); }}
+                    >
+                      📋 Copy Code
+                    </button>
+                  </div>
+                )}
+
+                {activeBooking.status === 'confirmed' && (
+                  <div style={{
+                    background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+                    borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', marginTop: 'var(--space-5)',
+                    textAlign: 'center', color: '#059669'
+                  }}>
+                    ✅ Booking confirmed! Payment has been released to the hostel owner.
+                  </div>
+                )}
+
                 <div className="booking-actions">
-                  <button onClick={() => handleCancelBooking(activeBooking._id)} className="btn btn-danger btn-sm">
-                    Cancel Booking
-                  </button>
+                  {activeBooking.status === 'approved' && (
+                    <button
+                      onClick={() => handlePayBooking(activeBooking._id)}
+                      className="btn btn-primary btn-sm"
+                      disabled={payingBookingId === activeBooking._id}
+                    >
+                      {payingBookingId === activeBooking._id ? '⏳ Processing...' : '💳 Pay & Book'}
+                    </button>
+                  )}
+                  {activeBooking.status === 'pending_confirmation' && (
+                    <button onClick={() => setShowRefundModal(activeBooking._id)} className="btn btn-danger btn-sm">
+                      🔄 Request Refund
+                    </button>
+                  )}
+                  {['pending', 'approved'].includes(activeBooking.status) && (
+                    <button onClick={() => handleCancelBooking(activeBooking._id)} className="btn btn-danger btn-sm">
+                      Cancel Booking
+                    </button>
+                  )}
                   <Link to={`/hostel/${activeBooking.hostel?._id || activeBooking.hostel}`} className="btn btn-outline btn-sm">
                     View Hostel
                   </Link>
                 </div>
 
                 {/* Review Section */}
-                {(activeBooking.status === 'approved' || activeBooking.status === 'active') && (
+                {['approved', 'active', 'confirmed', 'pending_confirmation'].includes(activeBooking.status) && (
                   <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-6)', borderTop: '1px solid var(--border-light)' }}>
                     {hasReviewedBooking(activeBooking._id) ? (
                       <div style={{
@@ -510,6 +742,35 @@ export default function StudentBookings() {
           )
         )}
       </div>
+
+      {/* Refund Modal */}
+      {showRefundModal && (
+        <div className="refund-modal-backdrop" onClick={() => setShowRefundModal(null)}>
+          <div className="refund-modal" onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>
+              🔄 Request Refund
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-5)' }}>
+              Your payment will be refunded to your wallet. Please provide a reason.
+            </p>
+            <textarea
+              className="form-input"
+              placeholder="Why do you want a refund? (minimum 5 characters)"
+              value={refundReason}
+              onChange={e => setRefundReason(e.target.value)}
+              style={{ width: '100%', minHeight: 100, resize: 'vertical', marginBottom: 'var(--space-4)' }}
+            />
+            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline btn-sm" onClick={() => { setShowRefundModal(null); setRefundReason(''); }}>
+                Cancel
+              </button>
+              <button className="btn btn-danger btn-sm" onClick={() => handleRefund(showRefundModal)}>
+                Confirm Refund
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
@@ -524,7 +785,7 @@ function ReviewForm({ onSubmit }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (rating === 0) { alert('Please select a rating'); return; }
+    if (rating === 0) { toast.error('Please select a rating'); return; }
     setSubmitting(true);
     await onSubmit(rating, comment, isComplaint);
     setSubmitting(false);

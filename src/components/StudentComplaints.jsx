@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast';
 
 const CATEGORIES = [
   { value: 'maintenance', label: 'Maintenance', desc: 'Plumbing, electrical, furniture' },
@@ -61,7 +62,7 @@ export default function StudentComplaints({ activeBooking }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!activeBooking) {
-      alert('You need an active booking to raise a complaint');
+      toast.error('You need an active booking to raise a complaint');
       return;
     }
 
@@ -86,10 +87,10 @@ export default function StudentComplaints({ activeBooking }) {
         setFormData({ category: '', priority: 'medium', subject: '', description: '' });
         fetchComplaints();
       } else {
-        alert(data.message || 'Failed to submit complaint');
+        toast.error(data.message || 'Failed to submit complaint');
       }
     } catch (error) {
-      alert('Failed to submit complaint');
+      toast.error('Failed to submit complaint');
     } finally {
       setSubmitting(false);
     }
@@ -116,7 +117,7 @@ export default function StudentComplaints({ activeBooking }) {
         fetchComplaints();
       }
     } catch (error) {
-      alert('Failed to submit feedback');
+      toast.error('Failed to submit feedback');
     }
   };
 
@@ -140,7 +141,7 @@ export default function StudentComplaints({ activeBooking }) {
         fetchComplaints();
       }
     } catch (error) {
-      alert('Failed to reopen complaint');
+      toast.error('Failed to reopen complaint');
     }
   };
 

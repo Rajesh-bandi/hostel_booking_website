@@ -53,7 +53,7 @@ router.get('/booking/current', authenticateStudent, async (req, res) => {
   try {
     const booking = await Booking.findOne({
       student: req.user.id,
-      status: { $in: ['active', 'approved'] }
+      status: { $in: ['active', 'approved', 'confirmed', 'pending_confirmation'] }
     })
     .populate('hostel', 'name city address contactPhone contactEmail amenities')
     .populate('room', 'number type rent');
@@ -86,7 +86,7 @@ router.get('/hostel/:hostelId', authenticateOwner, async (req, res) => {
     // Find all active/approved bookings for this hostel
     const bookings = await Booking.find({ 
       hostel: req.params.hostelId,
-      status: { $in: ['active', 'approved'] }
+      status: { $in: ['active', 'approved', 'confirmed', 'pending_confirmation'] }
     })
     .populate('student', 'name email phone studentId course year gender photo address emergencyContact')
     .populate('room', 'number type rent')
@@ -138,7 +138,7 @@ router.get('/:id', async (req, res) => {
     // Get active booking for this student
     const activeBooking = await Booking.findOne({
       student: req.params.id,
-      status: { $in: ['active', 'approved', 'pending'] }
+      status: { $in: ['active', 'approved', 'pending', 'confirmed', 'pending_confirmation'] }
     })
     .populate('hostel', 'name city')
     .populate('room', 'number type');

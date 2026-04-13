@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import DashboardLayout from '../components/DashboardLayout'
 import {
   BedIcon, EditIcon, TrashIcon, UserIcon, BuildingIcon,

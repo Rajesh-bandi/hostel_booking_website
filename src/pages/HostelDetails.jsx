@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { hostelsAPI, bookingsAPI, reviewsAPI } from '../services/api';
 import {
   MapPinIcon, StarIcon, PhoneIcon, MailIcon, ArrowLeftIcon,
@@ -94,10 +95,11 @@ export default function HostelDetails() {
     const token = localStorage.getItem('token');
     const userRole = localStorage.getItem('userRole');
     if (!token) {
-      if (confirm('Please login as a student to book a room. Go to login page?')) navigate('/login');
+      toast.error('Please login as a student to book a room');
+      navigate('/login');
       return;
     }
-    if (userRole !== 'student') { alert('Only students can book rooms'); return; }
+    if (userRole !== 'student') { toast.error('Only students can book rooms'); return; }
 
     setSelectedRoomType(roomType);
     setIsBooking(true);
@@ -111,10 +113,10 @@ export default function HostelDetails() {
     setIsBooking(false);
 
     if (result.success) {
-      alert('Booking request submitted successfully! The hostel owner will review your request.');
+      toast.success(`Payment successful! Your verification code is: ${result.verificationCode}`);
       navigate('/student/dashboard');
     } else {
-      alert(result.message || 'Failed to submit booking request');
+      toast.error(result.message || 'Payment failed. Please try again.');
     }
   }
 
@@ -144,7 +146,7 @@ export default function HostelDetails() {
       navigator.share({ title: hostel.name, url: window.location.href });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      toast.success('Link copied to clipboard!');
     }
   }
 
@@ -653,9 +655,9 @@ function RoomCard({ type, name, rent, availability, totalRooms, onBook, isBookin
         disabled={!hasAvailability || isBooking}
       >
         {isBooking
-          ? 'Booking...'
+          ? 'Processing Payment...'
           : hasAvailability
-            ? `Book Now · ₹${totalPrice.toLocaleString()}`
+            ? `Pay & Book · ₹${totalPrice.toLocaleString()}`
             : 'No Beds Available'}
       </button>
     </div>

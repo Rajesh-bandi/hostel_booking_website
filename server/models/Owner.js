@@ -41,6 +41,23 @@ const OwnerSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  // ── One-Time Payment Fields ─────────────────────
+  hasPaid: {
+    type: Boolean,
+    default: false
+  },
+  paymentAmount: {
+    type: Number,
+    default: 0
+  },
+  paymentDate: {
+    type: Date,
+    default: null
+  },
+  paymentId: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

@@ -89,7 +89,7 @@ router.get('/hostel/:hostelId', authenticateOwner, async (req, res) => {
     // Get all active bookings with payment info
     const bookings = await Booking.find({
       hostel: req.params.hostelId,
-      status: { $in: ['active', 'approved'] }
+      status: { $in: ['active', 'approved', 'confirmed', 'pending_confirmation'] }
     })
     .populate('student', 'name email phone')
     .select('student roomNumber roomType rent totalPaid paymentHistory');
@@ -120,7 +120,7 @@ router.get('/my', authenticateStudent, async (req, res) => {
   try {
     const booking = await Booking.findOne({
       student: req.user.id,
-      status: { $in: ['active', 'approved'] }
+      status: { $in: ['active', 'approved', 'confirmed', 'pending_confirmation'] }
     })
     .populate('hostel', 'name');
 
