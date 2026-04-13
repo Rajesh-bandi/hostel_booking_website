@@ -1,45 +1,32 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, useInView } from 'framer-motion';
 import SearchAutocomplete from '../components/SearchAutocomplete';
-import Carousel from '../components/Carousel';
 import {
-  SearchIcon, CheckCircleIcon, HomeIcon, EditIcon, UsersIcon,
-  WalletIcon, ArrowRightIcon, SparklesIcon, ShieldCheckIcon,
-  StarIcon, ZapIcon, GlobeIcon, BuildingIcon
+  SearchIcon, CheckCircleIcon, HomeIcon, ShieldCheckIcon,
+  StarIcon, ZapIcon, ArrowRightIcon, BuildingIcon, UsersIcon
 } from '../components/Icons';
 
-function useScrollReveal() {
+/* ── Animated wrapper for scroll-reveal sections ── */
+function RevealSection({ children, className = '', delay = 0 }) {
   const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add('visible');
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.15 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-  return ref;
-}
-
-function RevealSection({ children, className = '', direction = 'bottom', style = {} }) {
-  const ref = useScrollReveal();
-  const dirClass = direction === 'left' ? 'reveal-left' : direction === 'right' ? 'reveal-right' : 'reveal';
+  const inView = useInView(ref, { once: true, margin: '-60px' });
   return (
-    <div ref={ref} className={`${dirClass} ${className}`} style={style}>
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 40 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.7, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className={className}
+    >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
 export default function Home() {
   const navigate = useNavigate();
+  const [searchFocused, setSearchFocused] = useState(false);
 
   function handleSearch(query) {
     navigate(`/search?q=${encodeURIComponent(query)}`);
@@ -47,623 +34,853 @@ export default function Home() {
 
   const features = [
     {
-      icon: SearchIcon,
-      title: 'Search & Compare',
-      desc: 'Browse hundreds of verified hostels. Filter by location, price, and amenities to find your perfect match.',
+      icon: ShieldCheckIcon,
+      title: 'Verified Hostels',
+      desc: 'Every hostel is vetted for safety, cleanliness, and quality — so you move in with complete confidence.',
+      color: '#6C63FF',
     },
     {
-      icon: CheckCircleIcon,
-      title: 'Book Instantly',
-      desc: 'Create your profile, submit booking requests, and connect directly with hostel owners instantly.',
+      icon: ZapIcon,
+      title: 'Instant Booking',
+      desc: 'No waiting for approvals. Pay instantly and secure your room in seconds with our streamlined flow.',
+      color: '#4FACFE',
     },
     {
-      icon: HomeIcon,
-      title: 'Move In',
-      desc: 'Once approved, complete the payment and move into your comfortable new home away from home.',
-    },
-  ];
-
-  const ownerFeatures = [
-    {
-      icon: EditIcon,
-      title: 'Easy Setup',
-      desc: 'Create your hostel profile in minutes with our intuitive registration process.',
-    },
-    {
-      icon: UsersIcon,
-      title: 'Manage Bookings',
-      desc: 'Review requests, approve bookings, and manage everything from one dashboard.',
-    },
-    {
-      icon: WalletIcon,
-      title: 'Track Payments',
-      desc: 'Monitor rent payments, generate receipts, and manage finances effortlessly.',
+      icon: StarIcon,
+      title: 'Affordable Prices',
+      desc: 'Compare transparent pricing across hundreds of hostels. Find the perfect match for your budget.',
+      color: '#F59E0B',
     },
   ];
 
   const stats = [
-    { value: '500+', label: 'Verified Hostels' },
-    { value: '10K+', label: 'Happy Students' },
-    { value: '50+', label: 'Cities Covered' },
-    { value: '4.8', label: 'Average Rating' },
+    { value: '500+', label: 'Verified Hostels', icon: BuildingIcon },
+    { value: '10K+', label: 'Happy Students', icon: UsersIcon },
+    { value: '50+', label: 'Cities Covered', icon: SearchIcon },
+    { value: '4.8★', label: 'Average Rating', icon: StarIcon },
+  ];
+
+  const howItWorks = [
+    { step: '01', title: 'Search', desc: 'Browse hostels by city, price, or amenities' },
+    { step: '02', title: 'Pay & Book', desc: 'Secure your room with instant payment' },
+    { step: '03', title: 'Move In', desc: 'Show your code at the hostel and settle in' },
   ];
 
   return (
-    <main>
+    <main className="landing-page">
       <style>{`
+        /* ═══════════════════════════════════════════════════ */
+        /*  LANDING PAGE — PREMIUM ANIMATED REDESIGN          */
+        /* ═══════════════════════════════════════════════════ */
+
+        .landing-page {
+          --hero-purple: #6C63FF;
+          --hero-blue: #4FACFE;
+          --hero-glow: rgba(108, 99, 255, 0.15);
+          overflow-x: hidden;
+        }
+
         /* ─── HERO ─── */
-        .home-hero {
-          padding: 6rem 0 5rem;
+        .lp-hero {
+          min-height: 92vh;
+          display: flex;
+          align-items: center;
           position: relative;
           overflow: hidden;
-          background: var(--bg-body);
+          background: linear-gradient(160deg, #f8f9ff 0%, #eef1ff 35%, #f0f7ff 70%, #fafbff 100%);
         }
 
-        .home-hero::before {
-          content: '';
-          position: absolute;
-          top: -40%;
-          left: -15%;
-          width: 55%;
-          height: 140%;
-          background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
-          animation: float 25s ease-in-out infinite;
+        body.dark-mode .lp-hero {
+          background: linear-gradient(160deg, #0a0a1a 0%, #0f0e2a 35%, #0a1628 70%, #0d0d1f 100%);
         }
 
-        .home-hero::after {
+        .lp-hero::before {
           content: '';
           position: absolute;
-          bottom: -40%;
-          right: -10%;
+          top: -20%;
+          left: -10%;
           width: 50%;
-          height: 130%;
-          background: radial-gradient(circle, rgba(6, 182, 212, 0.06) 0%, transparent 70%);
-          animation: float 30s ease-in-out infinite reverse;
+          height: 120%;
+          background: radial-gradient(circle, rgba(108,99,255,0.08) 0%, transparent 65%);
+          animation: heroFloat 20s ease-in-out infinite;
+          pointer-events: none;
         }
 
-        .hero-inner {
-          max-width: 860px;
+        .lp-hero::after {
+          content: '';
+          position: absolute;
+          bottom: -30%;
+          right: -5%;
+          width: 45%;
+          height: 100%;
+          background: radial-gradient(circle, rgba(79,172,254,0.06) 0%, transparent 65%);
+          animation: heroFloat 25s ease-in-out infinite reverse;
+          pointer-events: none;
+        }
+
+        @keyframes heroFloat {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(20px, -30px) scale(1.05); }
+        }
+
+        .lp-hero-inner {
+          max-width: 1200px;
           margin: 0 auto;
-          text-align: center;
+          padding: 2rem var(--space-6);
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: var(--space-10);
+          align-items: center;
           position: relative;
           z-index: 1;
-          padding: 0 var(--space-6);
+          width: 100%;
         }
 
-        .hero-badge {
+        /* ─── HERO LEFT (Text + Search) ─── */
+        .lp-hero-left {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+
+        .lp-hero-badge {
           display: inline-flex;
           align-items: center;
-          gap: var(--space-2);
-          background: var(--bg);
-          border: 1px solid var(--border);
-          padding: 0.5rem 1rem;
-          border-radius: var(--radius-full);
-          color: var(--text-secondary);
-          font-size: var(--text-sm);
-          font-weight: 500;
-          margin-bottom: var(--space-8);
-          box-shadow: var(--shadow-sm);
-          animation: fadeInUp 0.5s ease both;
+          gap: 8px;
+          padding: 8px 18px;
+          background: rgba(108, 99, 255, 0.08);
+          border: 1px solid rgba(108, 99, 255, 0.15);
+          border-radius: 100px;
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: var(--hero-purple);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          margin-bottom: 1.5rem;
+          width: fit-content;
         }
 
-        .hero-badge svg {
-          color: var(--warning);
+        body.dark-mode .lp-hero-badge {
+          background: rgba(108, 99, 255, 0.12);
+          border-color: rgba(108, 99, 255, 0.25);
+          color: #a5a0ff;
         }
 
-        .hero-title {
-          font-size: clamp(2.5rem, 5vw, 4rem);
-          font-weight: 800;
-          color: var(--text);
-          margin: 0 0 var(--space-5);
+        .lp-hero-title {
+          font-size: clamp(2.4rem, 4.5vw, 3.6rem);
+          font-weight: 900;
           line-height: 1.08;
-          letter-spacing: -0.04em;
-          animation: fadeInUp 0.6s ease both;
-          animation-delay: 100ms;
+          letter-spacing: -0.035em;
+          color: var(--text);
+          margin: 0 0 1.25rem;
         }
 
-        .hero-title-accent {
-          background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        .lp-hero-title-gradient {
+          background: linear-gradient(135deg, #6C63FF 0%, #4FACFE 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          filter: drop-shadow(0 2px 12px rgba(108,99,255,0.25));
+        }
+
+        .lp-hero-sub {
+          font-size: 1.1rem;
+          color: var(--text-secondary);
+          line-height: 1.7;
+          max-width: 480px;
+          margin-bottom: 2rem;
+        }
+
+        /* ─── SEARCH BAR ─── */
+        .lp-search-wrap {
+          position: relative;
+          border-radius: 16px;
+          transition: all 0.3s ease;
+        }
+
+        .lp-search-wrap:hover {
+          transform: scale(1.01);
+        }
+
+        .lp-search-wrap.focused {
+          transform: scale(1.02);
+        }
+
+        .lp-search-wrap.focused::before {
+          content: '';
+          position: absolute;
+          inset: -3px;
+          border-radius: 19px;
+          background: linear-gradient(135deg, #6C63FF, #4FACFE);
+          z-index: -1;
+          opacity: 0.5;
+          filter: blur(8px);
+          animation: searchGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes searchGlow {
+          0% { opacity: 0.3; }
+          100% { opacity: 0.6; }
+        }
+
+        .lp-search-inner {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          background: var(--bg);
+          border: 2px solid var(--border);
+          border-radius: 16px;
+          padding: 4px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+          transition: all 0.3s ease;
+        }
+
+        .lp-search-wrap.focused .lp-search-inner {
+          border-color: var(--hero-purple);
+          box-shadow: 0 8px 32px rgba(108,99,255,0.12);
+        }
+
+        .lp-search-inner .sa-wrapper { flex: 1; }
+        .lp-search-inner .sa-input {
+          border: none !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          height: 48px;
+          font-size: 0.95rem;
+          padding-left: 2.75rem;
+        }
+        .lp-search-inner .sa-input:focus {
+          box-shadow: none !important;
+        }
+
+        .lp-search-btn {
+          padding: 12px 28px;
+          background: linear-gradient(135deg, #6C63FF, #4FACFE);
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-family: inherit;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .lp-search-btn:hover {
+          transform: scale(1.05);
+          box-shadow: 0 6px 20px rgba(108,99,255,0.35);
+        }
+
+        .lp-search-btn:active {
+          transform: scale(0.95);
+        }
+
+        /* ─── HERO RIGHT (Image) ─── */
+        .lp-hero-right {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .lp-hero-img-wrap {
+          position: relative;
+          width: 100%;
+          max-width: 520px;
+        }
+
+        .lp-hero-img {
+          width: 100%;
+          height: auto;
+          border-radius: 24px;
+          animation: imgFloat 6s ease-in-out infinite;
+          filter: drop-shadow(0 20px 40px rgba(108,99,255,0.15));
+        }
+
+        @keyframes imgFloat {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-12px); }
+        }
+
+        .lp-hero-img-overlay {
+          position: absolute;
+          inset: 0;
+          border-radius: 24px;
+          background: linear-gradient(90deg, rgba(248,249,255,0.25) 0%, transparent 40%);
+          pointer-events: none;
+        }
+
+        body.dark-mode .lp-hero-img-overlay {
+          background: linear-gradient(90deg, rgba(10,10,26,0.35) 0%, transparent 40%);
+        }
+
+        /* Floating stat badges on image */
+        .lp-float-badge {
+          position: absolute;
+          padding: 10px 18px;
+          background: var(--bg);
+          border-radius: 14px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 0.82rem;
+          font-weight: 700;
+          z-index: 2;
+          border: 1px solid var(--border);
+        }
+
+        .lp-float-badge-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .lp-float-badge.top-left {
+          top: 8%;
+          left: -5%;
+          animation: badgeFloat1 4s ease-in-out infinite;
+        }
+
+        .lp-float-badge.bottom-right {
+          bottom: 12%;
+          right: -8%;
+          animation: badgeFloat2 5s ease-in-out infinite;
+        }
+
+        @keyframes badgeFloat1 {
+          0%, 100% { transform: translateY(0) rotate(-1deg); }
+          50% { transform: translateY(-8px) rotate(1deg); }
+        }
+
+        @keyframes badgeFloat2 {
+          0%, 100% { transform: translateY(0) rotate(1deg); }
+          50% { transform: translateY(-10px) rotate(-1deg); }
+        }
+
+        /* ─── STATS BAR ─── */
+        .lp-stats {
+          padding: 4rem 0;
+          background: var(--bg-secondary);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        }
+
+        .lp-stats-inner {
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 0 var(--space-6);
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: var(--space-6);
+        }
+
+        .lp-stat {
+          text-align: center;
+          padding: var(--space-4);
+        }
+
+        .lp-stat-icon {
+          width: 48px;
+          height: 48px;
+          margin: 0 auto var(--space-3);
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, rgba(108,99,255,0.1), rgba(79,172,254,0.08));
+          color: var(--hero-purple);
+        }
+
+        .lp-stat-value {
+          font-size: 2rem;
+          font-weight: 900;
+          letter-spacing: -0.03em;
+          background: linear-gradient(135deg, #6C63FF, #4FACFE);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
 
-        .hero-subtitle {
-          font-size: var(--text-xl);
+        .lp-stat-label {
+          font-size: 0.85rem;
           color: var(--text-secondary);
-          margin: 0 0 var(--space-10);
-          font-weight: 400;
-          line-height: var(--leading-relaxed);
-          max-width: 600px;
-          margin-left: auto;
-          margin-right: auto;
-          animation: fadeInUp 0.6s ease both;
-          animation-delay: 200ms;
+          font-weight: 500;
+          margin-top: 4px;
         }
 
-        /* ─── SEARCH CARD ─── */
-        .search-card {
-          background: var(--bg);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-xl);
-          padding: var(--space-5);
-          box-shadow: var(--shadow-xl);
-          max-width: 800px;
+        /* ─── FEATURE CARDS ─── */
+        .lp-features {
+          padding: 6rem 0;
+          background: var(--bg-body);
+        }
+
+        .lp-section-inner {
+          max-width: 1100px;
           margin: 0 auto;
-          animation: fadeInUp 0.7s ease both;
-          animation-delay: 300ms;
-          transition: box-shadow var(--duration-slow) var(--ease-default);
+          padding: 0 var(--space-6);
         }
 
-        .search-card:hover {
-          box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.12);
-        }
-
-        body.dark-mode .search-card:hover,
-        body.dark-theme .search-card:hover {
-          box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5);
-        }
-
-        .search-grid {
-          display: grid;
-          grid-template-columns: 1fr auto;
-          gap: var(--space-3);
-          align-items: stretch;
-        }
-
-        .search-btn {
-          padding: 0.75rem 1.75rem;
-          background: linear-gradient(135deg, var(--primary), var(--primary-600));
-          color: white;
-          border: none;
-          border-radius: var(--radius-md);
-          font-weight: 600;
-          font-size: var(--text-sm);
-          cursor: pointer;
-          transition: all var(--duration-normal) var(--ease-default);
-          white-space: nowrap;
-          box-shadow: var(--shadow-primary);
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-        }
-
-        .search-btn:hover {
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-primary-lg);
-        }
-
-        .search-btn:active {
-          transform: translateY(0);
-        }
-
-        /* ─── HERO CAROUSEL ─── */
-        .hero-carousel {
-          max-width: 1000px;
-          margin: var(--space-12) auto 0;
-          animation: fadeInUp 0.8s ease both;
-          animation-delay: 400ms;
-        }
-
-        .hero-carousel .carousel {
-          border-radius: var(--radius-2xl);
-          box-shadow: var(--shadow-xl);
-          overflow: hidden;
-        }
-
-        .carousel-content-slide {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 280px;
-          padding: var(--space-10);
-          color: white;
+        .lp-section-header {
           text-align: center;
+          margin-bottom: 3.5rem;
         }
 
-        .carousel-slide-inner {
-          max-width: 500px;
-        }
-
-        .carousel-slide-icon {
-          width: 56px;
-          height: 56px;
-          border-radius: var(--radius-lg);
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
-          display: flex;
+        .lp-section-tag {
+          display: inline-flex;
           align-items: center;
-          justify-content: center;
-          margin: 0 auto var(--space-4);
-        }
-
-        .carousel-slide-title {
-          font-size: var(--text-2xl);
+          gap: 6px;
+          font-size: 0.75rem;
           font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--hero-purple);
           margin-bottom: var(--space-3);
-          letter-spacing: var(--tracking-tight);
         }
 
-        .carousel-slide-text {
-          font-size: var(--text-base);
-          opacity: 0.9;
-          line-height: var(--leading-relaxed);
-        }
-
-        /* ─── FEATURES ─── */
-        .features-section {
-          padding: var(--space-20) 0;
-        }
-
-        .section-header {
-          text-align: center;
-          margin-bottom: var(--space-12);
-        }
-
-        .section-title {
-          font-size: clamp(1.75rem, 3vw, 2.5rem);
-          font-weight: 700;
+        .lp-section-title {
+          font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+          font-weight: 800;
+          letter-spacing: -0.03em;
           color: var(--text);
           margin: 0 0 var(--space-3);
-          letter-spacing: var(--tracking-tighter);
-          line-height: var(--leading-tight);
         }
 
-        .section-subtitle {
-          font-size: var(--text-lg);
+        .lp-section-desc {
+          font-size: 1.05rem;
           color: var(--text-secondary);
-          line-height: var(--leading-relaxed);
+          max-width: 560px;
+          margin: 0 auto;
+          line-height: 1.6;
         }
 
-        .features-grid {
+        .lp-features-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: var(--space-6);
         }
 
-        .feature-card {
+        .lp-feature-card {
           background: var(--bg);
-          padding: var(--space-8);
-          border-radius: var(--radius-xl);
           border: 1px solid var(--border);
-          transition: all var(--duration-slow) var(--ease-default);
+          border-radius: 20px;
+          padding: 2.5rem 2rem;
+          transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
           position: relative;
           overflow: hidden;
         }
 
-        .feature-card::before {
+        .lp-feature-card::before {
           content: '';
           position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(6, 182, 212, 0.03));
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, var(--card-color), transparent);
           opacity: 0;
-          transition: opacity var(--duration-slow) var(--ease-default);
+          transition: opacity 0.3s;
         }
 
-        .feature-card:hover {
+        .lp-feature-card:hover {
           transform: translateY(-6px);
-          box-shadow: var(--shadow-lg);
-          border-color: var(--primary-200);
+          box-shadow: 0 16px 48px rgba(0,0,0,0.08);
+          border-color: rgba(108,99,255,0.2);
         }
 
-        .feature-card:hover::before {
+        .lp-feature-card:hover::before {
           opacity: 1;
         }
 
-        .feature-icon {
-          width: 48px;
-          height: 48px;
-          background: linear-gradient(135deg, var(--primary-50), rgba(6, 182, 212, 0.08));
-          border-radius: var(--radius-lg);
+        .lp-feature-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
           margin-bottom: var(--space-5);
-          color: var(--primary);
-          border: 1px solid var(--primary-200);
-          transition: all var(--duration-slow) var(--ease-default);
-          position: relative;
-          z-index: 1;
+          transition: transform 0.3s;
         }
 
-        body.dark-mode .feature-icon,
-        body.dark-theme .feature-icon {
-          background: rgba(99, 102, 241, 0.12);
-          border-color: rgba(99, 102, 241, 0.2);
+        .lp-feature-card:hover .lp-feature-icon {
+          transform: scale(1.1) rotate(-3deg);
         }
 
-        .feature-card:hover .feature-icon {
-          transform: scale(1.08) rotate(3deg);
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-        }
-
-        .feature-title {
-          font-size: var(--text-lg);
-          font-weight: 600;
+        .lp-feature-title {
+          font-size: 1.2rem;
+          font-weight: 800;
           color: var(--text);
-          margin: 0 0 var(--space-2);
-          position: relative;
-          z-index: 1;
+          margin-bottom: var(--space-2);
         }
 
-        .feature-desc {
+        .lp-feature-desc {
+          font-size: 0.92rem;
           color: var(--text-secondary);
-          line-height: var(--leading-relaxed);
-          font-size: var(--text-sm);
-          position: relative;
-          z-index: 1;
+          line-height: 1.65;
         }
 
-        /* ─── CTA ─── */
-        .cta-section {
-          padding: var(--space-20) 0;
-          background: linear-gradient(135deg, var(--primary) 0%, var(--primary-700) 50%, var(--accent-dark) 100%);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .cta-section::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -20%;
-          width: 70%;
-          height: 200%;
-          background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
-          animation: float 25s ease-in-out infinite;
-        }
-
-        .cta-inner {
-          max-width: 700px;
-          margin: 0 auto;
-          text-align: center;
-          position: relative;
-          z-index: 1;
-          padding: 0 var(--space-6);
-        }
-
-        .cta-title {
-          font-size: clamp(1.75rem, 3vw, 2.5rem);
-          font-weight: 700;
-          color: white;
-          margin: 0 0 var(--space-3);
-          letter-spacing: var(--tracking-tighter);
-          line-height: var(--leading-tight);
-        }
-
-        .cta-subtitle {
-          font-size: var(--text-lg);
-          color: rgba(255, 255, 255, 0.85);
-          margin: 0 0 var(--space-8);
-          line-height: var(--leading-relaxed);
-        }
-
-        .cta-btn {
-          padding: 0.875rem 2.25rem;
-          background: white;
-          color: var(--primary-700);
-          border: none;
-          border-radius: var(--radius-md);
-          font-weight: 600;
-          font-size: var(--text-base);
-          cursor: pointer;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-2);
-          transition: all var(--duration-normal) var(--ease-default);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-        }
-
-        .cta-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-        }
-
-        /* ─── FOOTER ─── */
-        .home-footer {
-          background: var(--bg);
-          padding: var(--space-10) 0;
+        /* ─── HOW IT WORKS ─── */
+        .lp-how {
+          padding: 6rem 0;
+          background: var(--bg-secondary);
           border-top: 1px solid var(--border);
         }
 
-        .footer-inner {
-          max-width: var(--max-width);
-          margin: 0 auto;
-          padding: 0 var(--space-6);
+        .lp-how-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: var(--space-8);
+          position: relative;
+        }
+
+        .lp-how-grid::before {
+          content: '';
+          position: absolute;
+          top: 40px;
+          left: 16%;
+          right: 16%;
+          height: 2px;
+          background: linear-gradient(90deg, #6C63FF, #4FACFE);
+          opacity: 0.2;
+        }
+
+        .lp-how-step {
           text-align: center;
+          position: relative;
         }
 
-        .footer-brand {
-          font-size: var(--text-xl);
-          font-weight: 700;
-          margin-bottom: var(--space-2);
-          background: linear-gradient(135deg, var(--primary), var(--accent));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .footer-text {
-          color: var(--text-tertiary);
-          font-size: var(--text-sm);
-          margin: var(--space-1) 0;
-        }
-
-        /* ─── STATS BAR ─── */
-        .stats-bar {
+        .lp-how-number {
+          width: 64px;
+          height: 64px;
+          border-radius: 20px;
+          background: linear-gradient(135deg, #6C63FF, #4FACFE);
+          color: white;
+          font-size: 1.1rem;
+          font-weight: 900;
           display: flex;
+          align-items: center;
           justify-content: center;
-          gap: var(--space-12);
-          padding: var(--space-12) 0;
-          border-bottom: 1px solid var(--border);
+          margin: 0 auto var(--space-5);
+          position: relative;
+          z-index: 1;
+          box-shadow: 0 8px 24px rgba(108,99,255,0.25);
         }
 
-        .stat-item {
+        .lp-how-title {
+          font-size: 1.15rem;
+          font-weight: 800;
+          color: var(--text);
+          margin-bottom: var(--space-2);
+        }
+
+        .lp-how-desc {
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+          line-height: 1.6;
+        }
+
+        /* ─── CTA ─── */
+        .lp-cta {
+          padding: 6rem 0;
+          background: var(--bg-body);
+        }
+
+        .lp-cta-box {
+          max-width: 800px;
+          margin: 0 auto;
+          padding: 4rem 3rem;
+          text-align: center;
+          background: linear-gradient(135deg, #6C63FF 0%, #4FACFE 100%);
+          border-radius: 28px;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 20px 60px rgba(108,99,255,0.25);
+        }
+
+        .lp-cta-box::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          right: -20%;
+          width: 60%;
+          height: 180%;
+          background: radial-gradient(circle, rgba(255,255,255,0.1), transparent 60%);
+          pointer-events: none;
+        }
+
+        .lp-cta-title {
+          font-size: clamp(1.6rem, 3vw, 2.2rem);
+          font-weight: 900;
+          color: white;
+          margin-bottom: var(--space-3);
+          position: relative;
+        }
+
+        .lp-cta-desc {
+          font-size: 1.05rem;
+          color: rgba(255,255,255,0.85);
+          margin-bottom: var(--space-8);
+          max-width: 500px;
+          margin-left: auto;
+          margin-right: auto;
+          position: relative;
+        }
+
+        .lp-cta-buttons {
+          display: flex;
+          gap: var(--space-4);
+          justify-content: center;
+          flex-wrap: wrap;
+          position: relative;
+        }
+
+        .lp-cta-btn {
+          padding: 14px 32px;
+          border-radius: 14px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-family: inherit;
+          transition: all 0.2s;
+          border: none;
+          text-decoration: none;
+        }
+
+        .lp-cta-btn.primary {
+          background: white;
+          color: #6C63FF;
+        }
+
+        .lp-cta-btn.primary:hover {
+          transform: scale(1.05);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .lp-cta-btn.outline {
+          background: rgba(255,255,255,0.15);
+          color: white;
+          border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .lp-cta-btn.outline:hover {
+          background: rgba(255,255,255,0.25);
+          transform: scale(1.05);
+        }
+
+        .lp-cta-btn:active { transform: scale(0.95) !important; }
+
+        /* ─── FOOTER ─── */
+        .lp-footer {
+          padding: 3rem 0;
+          background: var(--bg-secondary);
+          border-top: 1px solid var(--border);
           text-align: center;
         }
 
-        .stat-number {
-          font-size: var(--text-4xl);
-          font-weight: 800;
-          letter-spacing: var(--tracking-tighter);
-          background: linear-gradient(135deg, var(--primary), var(--accent));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          line-height: 1;
-          margin-bottom: var(--space-1);
+        .lp-footer-text {
+          font-size: 0.85rem;
+          color: var(--text-tertiary);
         }
 
-        .stat-label {
-          font-size: var(--text-sm);
-          color: var(--text-secondary);
-          font-weight: 500;
+        .lp-footer-links {
+          display: flex;
+          gap: var(--space-6);
+          justify-content: center;
+          margin-bottom: var(--space-3);
+          flex-wrap: wrap;
         }
+
+        .lp-footer-links a {
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+          text-decoration: none;
+          font-weight: 500;
+          transition: color 0.2s;
+        }
+
+        .lp-footer-links a:hover { color: var(--hero-purple); }
 
         /* ─── RESPONSIVE ─── */
-        @media (max-width: 768px) {
-          .home-hero {
-            padding: 3rem 0 3rem;
-          }
-          .search-grid {
+        @media (max-width: 900px) {
+          .lp-hero-inner {
             grid-template-columns: 1fr;
+            text-align: center;
+            gap: var(--space-8);
+            padding-top: 4rem;
           }
-          .features-grid {
-            grid-template-columns: 1fr;
-            gap: var(--space-4);
-          }
-          .stats-bar {
-            flex-direction: column;
-            gap: var(--space-6);
-            padding: var(--space-8) 0;
-          }
-          .hero-carousel {
-            margin-top: var(--space-8);
-          }
-          .carousel-content-slide {
-            min-height: 220px;
-            padding: var(--space-6);
-          }
-          .carousel-slide-title {
-            font-size: var(--text-xl);
-          }
+          .lp-hero-badge { margin-left: auto; margin-right: auto; }
+          .lp-hero-sub { margin-left: auto; margin-right: auto; }
+          .lp-hero-right { order: -1; }
+          .lp-hero-img-wrap { max-width: 380px; margin: 0 auto; }
+          .lp-float-badge { display: none; }
+          .lp-features-grid, .lp-how-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+          .lp-stats-inner { grid-template-columns: repeat(2, 1fr); }
+          .lp-how-grid::before { display: none; }
+          .lp-cta-box { padding: 3rem 1.5rem; margin: 0 1rem; }
         }
       `}</style>
 
-      {/* ═══════ HERO ═══════ */}
-      <section className="home-hero">
-        <div className="hero-inner">
-          <div className="hero-badge">
-            <SparklesIcon size={16} />
-            <span>Trusted by 10,000+ Students</span>
+      {/* ═══ HERO ═══ */}
+      <section className="lp-hero">
+        <div className="lp-hero-inner">
+          {/* LEFT — Text + Search */}
+          <div className="lp-hero-left">
+            <motion.div
+              className="lp-hero-badge"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <StarIcon size={14} /> #1 Student Hostel Platform
+            </motion.div>
+
+            <motion.h1
+              className="lp-hero-title"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              Find Your Perfect<br />
+              <span className="lp-hero-title-gradient">Student Hostel</span>
+            </motion.h1>
+
+            <motion.p
+              className="lp-hero-sub"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
+              Search, compare, and book verified hostels across India. Safe, affordable, and hassle-free — your new home is just a search away.
+            </motion.p>
+
+            <motion.div
+              className={`lp-search-wrap ${searchFocused ? 'focused' : ''}`}
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+            >
+              <div className="lp-search-inner">
+                <SearchAutocomplete
+                  onSearch={handleSearch}
+                  placeholder="Enter city name (e.g., Hyderabad, Bangalore...)"
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                />
+                <button className="lp-search-btn" onClick={() => {
+                  const input = document.querySelector('.search-autocomplete-container input');
+                  if (input?.value) handleSearch(input.value);
+                }}>
+                  <SearchIcon size={16} /> Search
+                </button>
+              </div>
+            </motion.div>
           </div>
 
-          <h1 className="hero-title">
-            Find Your Perfect<br />
-            <span className="hero-title-accent">Student Hostel</span>
-          </h1>
+          {/* RIGHT — Hero Image */}
+          <motion.div
+            className="lp-hero-right"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.9, delay: 0.8 }}
+          >
+            <div className="lp-hero-img-wrap">
+              <img
+                src="/images/lucid-origin_a_surreal_and_vibrant_cinematic_photo_of_isometric_low_poly_city_scene_minimal_3-0.jpg"
+                alt="Find your perfect student hostel"
+                className="lp-hero-img"
+                loading="eager"
+              />
+              <div className="lp-hero-img-overlay" />
 
-          <p className="hero-subtitle">
-            Discover verified hostels across India with the best amenities, reviews, and prices — all in one place.
-          </p>
+              {/* Floating badges */}
+              <motion.div
+                className="lp-float-badge top-left"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 1.2 }}
+              >
+                <div className="lp-float-badge-icon" style={{ background: 'rgba(34,197,94,0.12)' }}>
+                  <CheckCircleIcon size={18} style={{ color: '#16a34a' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.9rem' }}>500+</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Verified Hostels</div>
+                </div>
+              </motion.div>
 
-          <div className="search-card">
-            <div className="search-grid">
-              <SearchAutocomplete onSearch={handleSearch} />
-              <button className="search-btn" onClick={() => handleSearch()}>
-                <SearchIcon size={16} />
-                Search
-              </button>
+              <motion.div
+                className="lp-float-badge bottom-right"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 1.4 }}
+              >
+                <div className="lp-float-badge-icon" style={{ background: 'rgba(108,99,255,0.12)' }}>
+                  <StarIcon size={18} style={{ color: '#6C63FF' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.9rem' }}>4.8★</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Avg. Rating</div>
+                </div>
+              </motion.div>
             </div>
-          </div>
-
-          {/* Hero Carousel */}
-          <div className="hero-carousel">
-            <Carousel autoPlay={true} interval={5000} showArrows={true}>
-              <div
-                className="carousel-content-slide"
-                style={{ background: 'linear-gradient(135deg, #6366f1, #4338ca)' }}
-              >
-                <div className="carousel-slide-inner">
-                  <div className="carousel-slide-icon">
-                    <ShieldCheckIcon size={28} />
-                  </div>
-                  <h3 className="carousel-slide-title">Verified & Safe Hostels</h3>
-                  <p className="carousel-slide-text">
-                    Every hostel on HostelHub is verified for safety, cleanliness, and quality standards.
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className="carousel-content-slide"
-                style={{ background: 'linear-gradient(135deg, #0891b2, #06b6d4)' }}
-              >
-                <div className="carousel-slide-inner">
-                  <div className="carousel-slide-icon">
-                    <ZapIcon size={28} />
-                  </div>
-                  <h3 className="carousel-slide-title">Instant Booking</h3>
-                  <p className="carousel-slide-text">
-                    No more waiting. Submit your booking and get instant confirmation from hostel owners.
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className="carousel-content-slide"
-                style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)' }}
-              >
-                <div className="carousel-slide-inner">
-                  <div className="carousel-slide-icon">
-                    <GlobeIcon size={28} />
-                  </div>
-                  <h3 className="carousel-slide-title">50+ Cities Covered</h3>
-                  <p className="carousel-slide-text">
-                    From metro cities to college towns, find accommodation wherever you study.
-                  </p>
-                </div>
-              </div>
-            </Carousel>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* ═══════ STATS ═══════ */}
-      <div className="container">
-        <RevealSection>
-          <div className="stats-bar">
-            {stats.map(({ value, label }) => (
-              <div className="stat-item" key={label}>
-                <div className="stat-number">{value}</div>
-                <div className="stat-label">{label}</div>
+      {/* ═══ STATS ═══ */}
+      <section className="lp-stats">
+        <div className="lp-stats-inner">
+          {stats.map((s, i) => (
+            <RevealSection key={i} delay={i * 0.1}>
+              <div className="lp-stat">
+                <div className="lp-stat-icon">
+                  <s.icon size={22} />
+                </div>
+                <div className="lp-stat-value">{s.value}</div>
+                <div className="lp-stat-label">{s.label}</div>
               </div>
-            ))}
-          </div>
-        </RevealSection>
-      </div>
+            </RevealSection>
+          ))}
+        </div>
+      </section>
 
-      {/* ═══════ HOW IT WORKS ═══════ */}
-      <section className="features-section">
-        <div className="container">
+      {/* ═══ FEATURES ═══ */}
+      <section className="lp-features">
+        <div className="lp-section-inner">
           <RevealSection>
-            <div className="section-header">
-              <span className="section-tag">How It Works</span>
-              <h2 className="section-title">Simple Steps to Your New Home</h2>
-              <p className="section-subtitle">Find and book your perfect hostel in minutes</p>
+            <div className="lp-section-header">
+              <div className="lp-section-tag"><ZapIcon size={14} /> Why HostelHub</div>
+              <h2 className="lp-section-title">Everything You Need, In One Place</h2>
+              <p className="lp-section-desc">
+                We've built the largest student hostel network with safety, transparency, and convenience at the core.
+              </p>
             </div>
           </RevealSection>
 
-          <div className="features-grid">
-            {features.map(({ icon: FeatureIcon, title, desc }, i) => (
-              <RevealSection key={title} style={{ transitionDelay: `${i * 100}ms` }}>
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    <FeatureIcon size={22} />
+          <div className="lp-features-grid">
+            {features.map((f, i) => (
+              <RevealSection key={i} delay={i * 0.15}>
+                <div className="lp-feature-card" style={{ '--card-color': f.color }}>
+                  <div
+                    className="lp-feature-icon"
+                    style={{ background: `${f.color}15`, color: f.color }}
+                  >
+                    <f.icon size={26} />
                   </div>
-                  <h3 className="feature-title">{title}</h3>
-                  <p className="feature-desc">{desc}</p>
+                  <div className="lp-feature-title">{f.title}</div>
+                  <div className="lp-feature-desc">{f.desc}</div>
                 </div>
               </RevealSection>
             ))}
@@ -671,26 +888,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════ FOR OWNERS ═══════ */}
-      <section className="features-section" style={{ background: 'var(--bg-secondary)' }}>
-        <div className="container">
+      {/* ═══ HOW IT WORKS ═══ */}
+      <section className="lp-how">
+        <div className="lp-section-inner">
           <RevealSection>
-            <div className="section-header">
-              <span className="section-tag">For Owners</span>
-              <h2 className="section-title">List Your Hostel</h2>
-              <p className="section-subtitle">Reach thousands of students looking for accommodation</p>
+            <div className="lp-section-header">
+              <div className="lp-section-tag"><ArrowRightIcon size={14} /> How It Works</div>
+              <h2 className="lp-section-title">Book in 3 Simple Steps</h2>
+              <p className="lp-section-desc">
+                From search to move-in, HostelHub makes finding your next home effortless.
+              </p>
             </div>
           </RevealSection>
 
-          <div className="features-grid">
-            {ownerFeatures.map(({ icon: FeatureIcon, title, desc }, i) => (
-              <RevealSection key={title} style={{ transitionDelay: `${i * 100}ms` }}>
-                <div className="feature-card">
-                  <div className="feature-icon">
-                    <FeatureIcon size={22} />
-                  </div>
-                  <h3 className="feature-title">{title}</h3>
-                  <p className="feature-desc">{desc}</p>
+          <div className="lp-how-grid">
+            {howItWorks.map((h, i) => (
+              <RevealSection key={i} delay={i * 0.2}>
+                <div className="lp-how-step">
+                  <div className="lp-how-number">{h.step}</div>
+                  <div className="lp-how-title">{h.title}</div>
+                  <div className="lp-how-desc">{h.desc}</div>
                 </div>
               </RevealSection>
             ))}
@@ -698,30 +915,38 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════ CTA ═══════ */}
-      <RevealSection>
-        <section className="cta-section">
-          <div className="cta-inner">
-            <h2 className="cta-title">Ready to Find Your Hostel?</h2>
-            <p className="cta-subtitle">
-              Join thousands of students who found their perfect accommodation
-            </p>
-            <Link to="/register" className="cta-btn">
-              Get Started Free
-              <ArrowRightIcon size={18} />
-            </Link>
-          </div>
-        </section>
-      </RevealSection>
+      {/* ═══ CTA ═══ */}
+      <section className="lp-cta">
+        <div className="lp-section-inner">
+          <RevealSection>
+            <div className="lp-cta-box">
+              <h2 className="lp-cta-title">Ready to Find Your Home?</h2>
+              <p className="lp-cta-desc">
+                Join thousands of students who've already found their perfect hostel through HostelHub.
+              </p>
+              <div className="lp-cta-buttons">
+                <Link to="/search" className="lp-cta-btn primary">
+                  <SearchIcon size={16} /> Browse Hostels
+                </Link>
+                <Link to="/register" className="lp-cta-btn outline">
+                  Create Account <ArrowRightIcon size={16} />
+                </Link>
+              </div>
+            </div>
+          </RevealSection>
+        </div>
+      </section>
 
-      {/* ═══════ FOOTER ═══════ */}
-      <footer className="home-footer">
-        <div className="footer-inner">
-          <div className="footer-brand">HostelHub</div>
-          <p className="footer-text">Your Trusted Student Accommodation Platform</p>
-          <p className="footer-text" style={{ marginTop: 'var(--space-4)' }}>
-            &copy; 2026 HostelHub. All rights reserved.
-          </p>
+      {/* ═══ FOOTER ═══ */}
+      <footer className="lp-footer">
+        <div className="lp-section-inner">
+          <div className="lp-footer-links">
+            <Link to="/search">Browse Hostels</Link>
+            <Link to="/login">Student Login</Link>
+            <Link to="/login">Owner Login</Link>
+            <Link to="/register">Register</Link>
+          </div>
+          <p className="lp-footer-text">© 2026 HostelHub. Built for students, by students.</p>
         </div>
       </footer>
     </main>

@@ -104,7 +104,6 @@ export default function Navbar() {
     return [
       { to: '/', label: 'Home', icon: HomeIcon },
       { to: '/search', label: 'Browse', icon: SearchIcon },
-      { to: '/hostel-info', label: 'How It Works', icon: BuildingIcon },
     ];
   };
 

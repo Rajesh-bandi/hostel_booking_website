@@ -20,6 +20,8 @@ export default function SearchAutocomplete({
   placeholder = 'Search by city or hostel name...',
   autoFocus = false,
   compact = false,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
 }) {
   const [query, setQuery] = useState(initialValue);
   const [suggestions, setSuggestions] = useState([]);
@@ -411,7 +413,9 @@ export default function SearchAutocomplete({
         onKeyDown={handleKeyDown}
         onFocus={() => {
           if (suggestions.length > 0 && query.trim().length >= 2) setShowDropdown(true);
+          onFocusProp?.();
         }}
+        onBlur={() => onBlurProp?.()}
         autoComplete="off"
         autoFocus={autoFocus}
       />
