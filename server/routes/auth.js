@@ -5,6 +5,8 @@ import Owner from '../models/Owner.js';
 import Student from '../models/Student.js';
 import Otp from '../models/Otp.js';
 import { authenticate } from '../middleware/auth.js';
+import dotenv from "dotenv";
+dotenv.config();
 
 const router = express.Router();
 
