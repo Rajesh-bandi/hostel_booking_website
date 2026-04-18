@@ -477,19 +477,6 @@ export default function Login() {
             <p className="auth-right-text">
               Trusted by thousands of students and hostel owners across India.
             </p>
-            <Link to="/admin/login" style={{
-              display: 'inline-block',
-              marginTop: '2rem',
-              padding: '0.5rem 1.25rem',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '8px',
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: '0.8rem',
-              textDecoration: 'none',
-              transition: 'all 0.2s',
-            }}>
-              🛡️ Admin Login
-            </Link>
           </div>
         </div>
       </div>

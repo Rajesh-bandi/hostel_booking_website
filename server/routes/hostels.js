@@ -237,11 +237,22 @@ router.get('/suggest', async (req, res) => {
       return res.json({ success: true, suggestions: [] });
     }
 
-    const regex = new RegExp(q.trim(), 'i');
+    const terms = q.trim().split(/\s+/).filter(t => t.length > 0);
+    const searchQuery = { isActive: true };
+    if (terms.length > 0) {
+      searchQuery.$and = terms.map(term => ({
+        $or: [
+          { name: new RegExp(term, 'i') },
+          { city: new RegExp(term, 'i') },
+          { state: new RegExp(term, 'i') },
+          { address: new RegExp(term, 'i') }
+        ]
+      }));
+    }
 
-    // Find matching hostels (by name)
+    // Find matching hostels (by name or location)
     const hostelMatches = await Hostel.find(
-      { isActive: true, $or: [{ name: regex }, { city: regex }] },
+      searchQuery,
       { name: 1, city: 1, state: 1, rating: 1 }
     ).limit(8).lean();
 

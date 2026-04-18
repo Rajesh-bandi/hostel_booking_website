@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import { notificationAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
-const SOCKET_URL = '';
+const SOCKET_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
 
 // Bell SVG
 function BellIcon({ size = 22 }) {
